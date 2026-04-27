@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信用卡管理 v20260427.1510</title>
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card-bg: #ffffff;
+    --primary: #2b6ef0;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --info: #2ecc71;
+    --text: #2c3e50;
+    --border: #e0e6ed;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+  .container { max-width: 1400px; margin:0 auto; }
+  h1 { font-size: 1.8rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .alert-bar { background: #fff3cd; border:1px solid #ffc107; border-radius:8px; padding:10px 15px; margin-bottom:20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+  .alert-item { font-size:0.9rem; padding:4px 10px; border-radius:4px; }
+  .alert-red { background: #fce4e4; color: #c0392b; }
+  .alert-orange { background: #fef3e2; color: #e67e22; }
+  .alert-yellow { background: #fff9e6; color: #b8860b; }
+
+  .tabs { display:flex; gap:10px; margin-bottom:20px; }
+  .tab-btn { padding:8px 20px; border:1px solid var(--border); background: white; border-radius:6px; cursor:pointer; transition:0.2s; }
+  .tab-btn.active { background: var(--primary); color:white; border-color:var(--primary); }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap:15px; flex-wrap: wrap; }
+  .filters { display: flex; gap:10px; flex-wrap: wrap; align-items: center; }
+  .filters select, .filters input, .filters button { padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.9rem; background:white; }
+  .btn { background: var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:500; }
+  .btn-sm { padding:6px 12px; font-size:0.8rem; }
+  .btn-outline { background: white; color: var(--primary); border:1px solid var(--primary); }
+  .btn-danger { background: var(--danger); }
+  table { width:100%; border-collapse: collapse; background: var(--card-bg); border-radius:10px; overflow:hidden; box-shadow: var(--shadow); }
+  th { background: #f8fafd; padding:12px; text-align:left; font-weight:600; font-size:0.85rem; border-bottom:1px solid var(--border); cursor: pointer; user-select: none; }
+  th:hover { background: #eef2f7; }
+  td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:0.9rem; }
+  tr:hover { background: #f5f9ff; }
+  .urgent-red { background: #ffe6e6 !important; }
+  .urgent-orange { background: #fff3e0 !important; }
+  .urgent-yellow { background: #fffde6 !important; }
+
+  .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:100; }
+  .modal-content { background:white; border-radius:12px; padding:24px; width:500px; max-height:80vh; overflow-y:auto; box-shadow:0 8px 30px rgba(0,0,0,0.2); }
+  .form-group { margin-bottom:15px; }
+  .form-group label { display:block; margin-bottom:4px; font-weight:500; font-size:0.9rem; }
+  .form-group input, .form-group select, .form-group textarea { width:100%; padding:8px; border:1px solid var(--border); border-radius:6px; }
+
+  .detail-item { margin-bottom: 12px; }
+  .detail-item strong { display: inline-block; width: 80px; color: #555; }
+  .detail-item span { color: #222; }
+
+  .calendar-container { display: flex; flex-direction: column; gap: 20px; }
+  .calendar-box { width: 100%; background: white; border-radius: 12px; padding: 15px; box-shadow: var(--shadow); }
+  .calendar { display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; }
+  .cal-header { font-weight:600; text-align:center; padding:5px; font-size:0.9rem; color:#7f8c8d; }
+  .cal-day { min-height:60px; border:1px solid var(--border); border-radius:6px; padding:4px; font-size:0.8rem; position:relative; background:#fcfcfc; transition: background 0.2s; }
+  .cal-day .num { font-weight:600; }
+  .cal-day .marker { font-size:0.6rem; padding:1px 3px; border-radius:3px; margin-top:2px; display:block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #e0e0e0; }
+  .marker-bill { background: #d4e6ff !important; }
+  .marker-due { background: #fdebd0 !important; }
+  .month-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+  .month-nav span { font-weight: 600; }
+
+  .cal-filter-bar { margin-bottom: 15px; display: flex; gap: 10px; }
+  .cal-filter-btn { padding:4px 12px; font-size:0.8rem; border:1px solid var(--border); background: white; border-radius:4px; cursor:pointer; }
+  .cal-filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  .badge { font-size:0.7rem; padding:2px 6px; border-radius:4px; background:#eee; margin-right:4px; }
+  .hide { display:none !important; }
+  .color-picker { width: 32px; height: 24px; padding:0; border:none; cursor: pointer; vertical-align: middle; }
+  .inline-check { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>💳 信用卡管家
+    <span style="margin-left:auto; display:flex; gap:10px;">
+      <button class="btn btn-sm btn-outline" id="exportBtn">📥 导出备份</button>
+      <button class="btn btn-sm btn-outline" id="importBtn">📤 导入恢复</button>
+    </span>
+  </h1>
+
+  <div class="alert-bar" id="alertBar">
+    <span>⏰ 还款提醒：</span>
+    <span id="alertToday" class="alert-item alert-red">今日到期 0</span>
+    <span id="alert3day" class="alert-item alert-orange">3天内 0</span>
+    <span id="alert7day" class="alert-item alert-yellow">7天内 0</span>
+    <span style="margin-left:auto; font-size:0.8rem;">基于最近还款日自动刷新</span>
+  </div>
+
+  <div class="toolbar">
+    <div style="display:flex; gap:10px;">
+      <button class="tab-btn active" id="tabList">📋 卡片列表</button>
+      <button class="tab-btn" id="tabCalendar">📅 日历视图</button>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <label>📆 推算日期</label>
+      <input type="date" id="simulateDate" style="padding:6px; border-radius:6px; border:1px solid var(--border);">
+      <button class="btn btn-sm" id="resetDate">今天</button>
+    </div>
+  </div>
+
+  <div class="toolbar" id="filterBar">
+    <div class="filters">
+      <select id="filterBank" multiple size="1" style="width:160px;" title="银行（可多选）">
+        <option value="">全部银行</option>
+      </select>
+      <div style="display:flex; gap:5px;" id="orgFilters"></div>
+      <span>账单日</span>
+      <input type="number" id="billDayFrom" placeholder="从" min="1" max="31" style="width:70px;">
+      <span>-</span>
+      <input type="number" id="billDayTo" placeholder="到" min="1" max="31" style="width:70px;">
+      <button class="btn btn-sm btn-outline" id="clearFilters">清除</button>
+    </div>
+    <button class="btn" id="addCardBtn">＋ 添加卡片</button>
+  </div>
+
+  <div id="listView">
+    <table id="cardTable">
+      <thead>
+        <tr>
+          <th data-sort="bank">银行</th>
+          <th data-sort="org">卡组织</th>
+          <th data-sort="level">等级</th>
+          <th data-sort="lastFour">尾号</th>
+          <th data-sort="nickname">昵称</th>
+          <th data-sort="billDay">账单日</th>
+          <th data-sort="repayment">还款日</th>
+          <th data-sort="cardLimit">额度</th>
+          <th>推算</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="calendarView" class="hide">
+    <div class="cal-filter-bar">
+      <button class="cal-filter-btn active" data-filter="all">全部</button>
+      <button class="cal-filter-btn" data-filter="bill">仅账单日</button>
+      <button class="cal-filter-btn" data-filter="due">仅还款日</button>
+    </div>
+    <div class="month-nav">
+      <button id="prevMonth" class="btn btn-sm btn-outline">◀ 上月</button>
+      <span id="calMonthLabel"></span>
+      <button id="nextMonth" class="btn btn-sm btn-outline">下月 ▶</button>
+    </div>
+    <div class="calendar-container">
+      <div class="calendar-box">
+        <div class="calendar" id="calendarGrid1"></div>
+      </div>
+      <div class="calendar-box">
+        <div class="calendar" id="calendarGrid2"></div>
+      </div>
+    </div>
+    <div style="margin-top:10px; font-size:0.8rem;">
+      <span>💡 标签底色：账单日浅蓝，还款日浅橙；文字颜色为银行指定色。高亮日期：推算日（金色渐变）。</span>
+    </div>
+  </div>
+</div>
+
+<div id="bankModal" class="modal hide">
+  <div class="modal-content">
+    <h3>🏦 银行额度管理</h3>
+    <button class="btn btn-sm" id="addBankBtn">添加银行</button>
+    <table style="margin:15px 0; width:100%;">
+      <thead><tr><th>银行</th><th>总额度</th><th>颜色</th><th>操作</th></tr></thead>
+      <tbody id="bankListBody"></tbody>
+    </table>
+    <button class="btn btn-sm btn-outline" id="closeBankModal">关闭</button>
+  </div>
+</div>
+
+<div id="cardModal" class="modal hide">
+  <div class="modal-content">
+    <h3 id="cardModalTitle">添加信用卡</h3>
+    <div class="form-group"><label>银行</label><select id="cardBank"><option value="">选择银行</option></select><button class="btn btn-sm" id="newBankInCard" style="margin-top:5px;">＋ 新建银行</button></div>
+    <div class="form-group"><label>卡组织（可多选）</label><div id="orgCheckboxes" style="display:flex; gap:15px; flex-wrap:wrap;"></div></div>
+    <div class="form-group"><label>卡片等级</label><input id="cardLevel" placeholder="如金卡、白金卡"></div>
+    <div class="form-group"><label>卡号后4位</label><input id="cardLastFour" maxlength="4" placeholder="1234"></div>
+    <div class="form-group"><label>昵称</label><input id="cardNickname" placeholder="例如：海淘卡"></div>
+    <div class="form-group"><label>备注（联名会员号等）</label><textarea id="cardNote" rows="2"></textarea></div>
+    <div class="form-group"><label>卡片额度</label><input type="number" id="cardLimit" placeholder="50000"></div>
+    <div class="form-group">
+      <label>账单日</label>
+      <div style="display:flex; gap:10px; align-items: center;">
+        <input type="number" id="billDay" min="1" max="31" placeholder="10" style="flex:1;">
+        <label class="inline-check"><input type="checkbox" id="billDayEndOfMonth"> 月底</label>
+      </div>
+    </div>
+    <div class="form-group"><label>还款方式</label><select id="repaymentType"><option value="fixed">固定还款日</option><option value="afterBill">账单日后N天</option></select></div>
+    <div class="form-group"><label id="repaymentLabel">固定还款日</label><input type="number" id="repaymentValue" min="1" max="31" placeholder="25"></div>
+    <input type="hidden" id="editCardId">
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-outline" id="cancelCardBtn">取消</button>
+      <button class="btn" id="saveCardBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="detailModal" class="modal hide">
+  <div class="modal-content">
+    <h3>📋 卡片详情</h3>
+    <div id="detailContent"></div>
+    <button class="btn btn-outline" style="margin-top:15px;" id="closeDetailBtn">关闭</button>
+  </div>
+</div>
+
+<input type="file" id="importFileInput" accept=".json" style="display:none;">
+
+<script>
+  const STORAGE_KEY = 'credit_card_app';
+  let banks = [];
+  let cards = [];
+  let editingCardId = null;
+
+  const defaultColors = ['#2b6ef0', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#3498db'];
+
+  function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ banks, cards })); }
+  function loadData() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      banks = data.banks || [];
+      cards = data.cards || [];
+      banks.forEach((b, i) => { if (!b.color) b.color = defaultColors[i % defaultColors.length]; });
+    } else {
+      banks = [
+        { id: 'b1', name: '招商银行', totalLimit: 100000, color: '#2b6ef0' },
+        { id: 'b2', name: '浦发银行', totalLimit: 80000, color: '#e74c3c' }
+      ];
+      cards = [
+        { id: 'c1', bankId: 'b1', organizations: ['银联','Visa'], level: '白金卡', lastFour: '1234', nickname: '经典白', note: '国航会员CA123', cardLimit: 100000, billDay: 10, repaymentType: 'fixed', repaymentValue: 25 },
+        { id: 'c2', bankId: 'b1', organizations: ['Mastercard'], level: '金卡', lastFour: '5678', nickname: '万事达', note: '', cardLimit: 50000, billDay: 5, repaymentType: 'afterBill', repaymentValue: 20 }
+      ];
+      saveData();
+    }
+  }
+
+  // 处理月底逻辑的工具函数
+  function getActualBillDay(card, year, month) { // month: 1-12
+    if (card.billDay === 0) return new Date(year, month, 0).getDate();
+    const maxDay = new Date(year, month, 0).getDate();
+    return Math.min(card.billDay, maxDay);
+  }
+
+  function safeDate(year, month, day) { // month: 1-12, day: 实际日或0（月底）
+    if (day === 0) return new Date(year, month, 0).getDate();
+    const max = new Date(year, month, 0).getDate();
+    return Math.min(day, max);
+  }
+
+  function getBillingDates(card, consumeDate) {
+    const billDay = card.billDay;
+    const y = consumeDate.getFullYear();
+    const m = consumeDate.getMonth();
+    const d = consumeDate.getDate();
+    let billDate;
+    const actualBillDay = getActualBillDay(card, y, m+1); // 当月实际账单日
+    if (d <= actualBillDay) {
+      billDate = new Date(y, m, actualBillDay);
+    } else {
+      const nextMonth = m+1;
+      const nextYear = nextMonth === 12 ? y+1 : y;
+      const nextActualBillDay = getActualBillDay(card, nextYear, (nextMonth % 12) + 1);
+      billDate = new Date(nextYear, nextMonth % 12, nextActualBillDay);
+    }
+    let dueDate;
+    if (card.repaymentType === 'fixed') {
+      const dueDay = card.repaymentValue;
+      const dueYear = billDate.getFullYear();
+      const dueMonth = billDate.getMonth() + 1;
+      dueDate = new Date(dueYear, dueMonth - 1, safeDate(dueYear, dueMonth, dueDay));
+    } else {
+      dueDate = new Date(billDate);
+      dueDate.setDate(dueDate.getDate() + card.repaymentValue);
+    }
+    return { billDate, dueDate };
+  }
+
+  function getUpcomingDueDate(card) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    for (let i = 0; i < 12; i++) {
+      const y = currentYear + Math.floor((currentMonth + i) / 12);
+      const m = (currentMonth + i) % 12;
+      const actualBillDay = getActualBillDay(card, y, m+1);
+      const billDate = new Date(y, m, actualBillDay);
+      let dueDate;
+      if (card.repaymentType === 'fixed') {
+        const dueDay = card.repaymentValue;
+        const dueYear = billDate.getFullYear();
+        const dueMonth = billDate.getMonth() + 1;
+        dueDate = new Date(dueYear, dueMonth - 1, safeDate(dueYear, dueMonth, dueDay));
+      } else {
+        dueDate = new Date(billDate);
+        dueDate.setDate(dueDate.getDate() + card.repaymentValue);
+      }
+      if (dueDate >= today) return dueDate;
+    }
+    return new Date(2099, 0, 1);
+  }
+
+  function getUrgencyClass(dueDate) {
+    const now = new Date(); now.setHours(0,0,0,0);
+    const due = new Date(dueDate); due.setHours(0,0,0,0);
+    const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'urgent-red';
+    if (diffDays <= 3) return 'urgent-orange';
+    if (diffDays <= 7) return 'urgent-yellow';
+    return '';
+  }
+
+  function getEventsForMonth(card, year, month) {
+    const events = [];
+    const bank = banks.find(b => b.id === card.bankId);
+    const color = bank?.color || '#666';
+    const label = `${bank?.name || '未知'}${card.lastFour}${card.nickname ? ' '+card.nickname : ''}`;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const actualBillDay = getActualBillDay(card, year, month+1);
+    if (actualBillDay >= 1 && actualBillDay <= daysInMonth) {
+      events.push({ day: actualBillDay, type: 'bill', label, color });
+    }
+    if (card.repaymentType === 'fixed') {
+      const dueDay = card.repaymentValue;
+      const actualDueDay = safeDate(year, month+1, dueDay);
+      if (actualDueDay >= 1 && actualDueDay <= daysInMonth) {
+        events.push({ day: actualDueDay, type: 'due', label, color });
+      }
+    } else {
+      if (actualBillDay >= 1 && actualBillDay <= daysInMonth) {
+        const billDate = new Date(year, month, actualBillDay);
+        const dueDate = new Date(billDate);
+        dueDate.setDate(dueDate.getDate() + card.repaymentValue);
+        if (dueDate.getMonth() === month && dueDate.getFullYear() === year) {
+          events.push({ day: dueDate.getDate(), type: 'due', label, color });
+        }
+      }
+      const prevMonth = month - 1 < 0 ? 11 : month - 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      const prevBillDay = getActualBillDay(card, prevYear, prevMonth+1);
+      const prevBillDate = new Date(prevYear, prevMonth, prevBillDay);
+      const prevDueDate = new Date(prevBillDate);
+      prevDueDate.setDate(prevDueDate.getDate() + card.repaymentValue);
+      if (prevDueDate.getMonth() === month && prevDueDate.getFullYear() === year) {
+        const day = prevDueDate.getDate();
+        if (!events.some(e => e.day === day && e.type === 'due')) {
+          events.push({ day, type: 'due', label, color });
+        }
+      }
+    }
+    return events;
+  }
+
+  // ---------- 渲染 ----------
+  const cardTableBody = document.querySelector('#cardTable tbody');
+  const simulateDateInput = document.getElementById('simulateDate');
+
+  function renderAll() {
+    renderBankSelects();
+    renderOrgFilters();
+    renderCardTable();
+    renderCalendar();
+    updateAlerts();
+  }
+
+  function renderBankSelects() {
+    const filterBank = document.getElementById('filterBank');
+    filterBank.innerHTML = '<option value="">全部银行</option>';
+    banks.forEach(b => {
+      const count = cards.filter(c => c.bankId === b.id).length;
+      filterBank.innerHTML += `<option value="${b.id}">${b.name} (${count}张)</option>`;
+    });
+    const cardBank = document.getElementById('cardBank');
+    if (cardBank) {
+      cardBank.innerHTML = '<option value="">选择银行</option>';
+      banks.forEach(b => cardBank.innerHTML += `<option value="${b.id}">${b.name}</option>`);
+    }
+    renderBankModal();
+  }
+
+  function renderOrgFilters() {
+    const orgSet = new Set(cards.flatMap(c => c.organizations));
+    const container = document.getElementById('orgFilters');
+    container.innerHTML = '';
+    orgSet.forEach(org => {
+      const label = document.createElement('label');
+      label.style.display = 'flex'; label.style.alignItems = 'center'; label.style.gap = '4px';
+      label.innerHTML = `<input type="checkbox" class="orgFilterCheck" value="${org}"> ${org}`;
+      container.appendChild(label);
+    });
+  }
+
+  function getFilteredCards() {
+    const bankVal = Array.from(document.getElementById('filterBank').selectedOptions).map(o => o.value).filter(v => v);
+    const orgChecks = Array.from(document.querySelectorAll('.orgFilterCheck:checked')).map(cb => cb.value);
+    const billFrom = parseInt(document.getElementById('billDayFrom').value) || 1;
+    const billTo = parseInt(document.getElementById('billDayTo').value) || 31;
+    return cards.filter(c => {
+      if (bankVal.length && !bankVal.includes(c.bankId)) return false;
+      if (orgChecks.length && !orgChecks.some(org => c.organizations.includes(org))) return false;
+      const billDay = c.billDay === 0 ? 31 : c.billDay; // 月底视为31日参与区间筛选
+      if (billDay < billFrom || billDay > billTo) return false;
+      return true;
+    });
+  }
+
+  function renderCardTable() {
+    const simulateDate = simulateDateInput.valueAsDate || new Date();
+    const filtered = getFilteredCards();
+    const sortKey = cardTableBody.dataset.sortKey || 'billDay';
+    const sortDir = cardTableBody.dataset.sortDir || 'asc';
+    filtered.sort((a, b) => {
+      let valA, valB;
+      if (sortKey === 'bank') { valA = banks.find(ba => ba.id === a.bankId)?.name || ''; valB = banks.find(ba => ba.id === b.bankId)?.name || ''; }
+      else if (sortKey === 'org') { valA = a.organizations.join(','); valB = b.organizations.join(','); }
+      else if (sortKey === 'level') { valA = a.level; valB = b.level; }
+      else if (sortKey === 'lastFour') { valA = a.lastFour; valB = b.lastFour; }
+      else if (sortKey === 'nickname') { valA = a.nickname; valB = b.nickname; }
+      else if (sortKey === 'billDay') {
+        valA = a.billDay === 0 ? 32 : a.billDay; // 月底排最后
+        valB = b.billDay === 0 ? 32 : b.billDay;
+      }
+      else if (sortKey === 'repayment') {
+        const datesA = getBillingDates(a, simulateDate);
+        const datesB = getBillingDates(b, simulateDate);
+        valA = datesA.dueDate.getTime(); valB = datesB.dueDate.getTime();
+      }
+      else if (sortKey === 'cardLimit') { valA = a.cardLimit; valB = b.cardLimit; }
+      if (typeof valA === 'string') return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      return sortDir === 'asc' ? valA - valB : valB - valA;
+    });
+
+    cardTableBody.innerHTML = '';
+    filtered.forEach(card => {
+      const bank = banks.find(b => b.id === card.bankId);
+      const { billDate, dueDate } = getBillingDates(card, simulateDate);
+      const upcomingDue = getUpcomingDueDate(card);
+      const urgencyClass = getUrgencyClass(upcomingDue);
+      const row = document.createElement('tr');
+      row.className = urgencyClass;
+      row.innerHTML = `
+        <td>${bank?.name || '未知'}</td>
+        <td>${card.organizations.map(o => `<span class="badge">${o}</span>`).join('')}</td>
+        <td>${card.level || '-'}</td>
+        <td>${card.lastFour}</td>
+        <td>${card.nickname || '-'}</td>
+        <td>${card.billDay === 0 ? '月底' : card.billDay+'日'}</td>
+        <td>${card.repaymentType === 'fixed' ? `固定${card.repaymentValue}日` : `账单后${card.repaymentValue}天`}</td>
+        <td>¥${card.cardLimit.toLocaleString()}</td>
+        <td style="font-size:0.8rem;">
+          📄${billDate.getMonth()+1}/${billDate.getDate()} 
+          ⏳${dueDate.getMonth()+1}/${dueDate.getDate()}
+        </td>
+        <td>
+          <button class="btn btn-sm viewDetailBtn" data-id="${card.id}" title="查看详情">🔍</button>
+          <button class="btn btn-sm btn-outline editCardBtn" data-id="${card.id}">✏️</button>
+          <button class="btn btn-sm btn-danger delCardBtn" data-id="${card.id}">🗑</button>
+        </td>
+      `;
+      cardTableBody.appendChild(row);
+    });
+
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+      th.onclick = () => {
+        const key = th.dataset.sort;
+        if (cardTableBody.dataset.sortKey === key) {
+          cardTableBody.dataset.sortDir = cardTableBody.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          cardTableBody.dataset.sortKey = key;
+          cardTableBody.dataset.sortDir = 'asc';
+        }
+        renderCardTable();
+      };
+    });
+  }
+
+  function updateAlerts() {
+    const now = new Date(); now.setHours(0,0,0,0);
+    let today = 0, threeDay = 0, sevenDay = 0;
+    cards.forEach(c => {
+      const dueDate = getUpcomingDueDate(c);
+      const diff = Math.ceil((dueDate - now) / (1000*60*60*24));
+      if (diff === 0) today++;
+      if (diff <= 3) threeDay++;
+      if (diff <= 7) sevenDay++;
+    });
+    document.getElementById('alertToday').innerText = `今日到期 ${today}`;
+    document.getElementById('alert3day').innerText = `3天内 ${threeDay}`;
+    document.getElementById('alert7day').innerText = `7天内 ${sevenDay}`;
+  }
+
+  // ---- 日历渲染 ----
+  let calYear, calMonth;
+  let calFilterMode = 'all';
+
+  function renderCalendar() {
+    if (!calYear) {
+      const now = new Date();
+      calYear = now.getFullYear();
+      calMonth = now.getMonth();
+    }
+    const simulateDate = simulateDateInput.valueAsDate || new Date();
+    document.getElementById('calMonthLabel').innerText =
+      `${calYear}年${calMonth+1}月  —  ${(new Date(calYear, calMonth+1)).getFullYear()}年${(new Date(calYear, calMonth+1)).getMonth()+1}月`;
+
+    const grid1 = document.getElementById('calendarGrid1');
+    const grid2 = document.getElementById('calendarGrid2');
+    renderMonthGrid(grid1, calYear, calMonth, simulateDate);
+    const nextDate = new Date(calYear, calMonth + 1, 1);
+    renderMonthGrid(grid2, nextDate.getFullYear(), nextDate.getMonth(), simulateDate);
+  }
+
+  function renderMonthGrid(grid, year, month, highlightDate) {
+    grid.innerHTML = '';
+    const daysOfWeek = ['日','一','二','三','四','五','六'];
+    daysOfWeek.forEach(d => grid.innerHTML += `<div class="cal-header">${d}</div>`);
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const highlightTime = highlightDate ? new Date(highlightDate.getFullYear(), highlightDate.getMonth(), highlightDate.getDate()).getTime() : null;
+
+    for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div')).className = 'cal-day';
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-day';
+      cell.innerHTML = `<span class="num">${d}</span>`;
+
+      if (highlightTime) {
+        const currentTime = new Date(year, month, d).getTime();
+        const diffDays = Math.abs((currentTime - highlightTime) / (1000 * 60 * 60 * 24));
+        const maxHighlightRange = 3;
+        if (diffDays <= maxHighlightRange) {
+          const alpha = 0.3 - (diffDays / maxHighlightRange) * 0.25;
+          cell.style.background = `rgba(255, 215, 0, ${Math.max(0, alpha)})`;
+        }
+        if (diffDays === 0) {
+          cell.style.background = 'rgba(255, 215, 0, 0.35)';
+          cell.style.fontWeight = 'bold';
+          cell.style.border = '2px solid #f39c12';
+        }
+      }
+
+      cards.forEach(card => {
+        let events = getEventsForMonth(card, year, month);
+        if (calFilterMode === 'bill') events = events.filter(e => e.type === 'bill');
+        else if (calFilterMode === 'due') events = events.filter(e => e.type === 'due');
+        events.forEach(ev => {
+          if (ev.day === d) {
+            const marker = document.createElement('span');
+            marker.className = `marker ${ev.type === 'bill' ? 'marker-bill' : 'marker-due'}`;
+            marker.style.color = ev.color;
+            marker.style.fontWeight = 'bold';
+            marker.innerText = `${ev.type === 'bill' ? '📄' : '⏳'} ${ev.label}`;
+            cell.appendChild(marker);
+          }
+        });
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  function renderBankModal() {
+    const tbody = document.getElementById('bankListBody');
+    tbody.innerHTML = '';
+    banks.forEach(bank => {
+      tbody.innerHTML += `<tr>
+        <td>${bank.name}</td>
+        <td>¥${bank.totalLimit.toLocaleString()}</td>
+        <td><input type="color" class="bankColorPicker" data-id="${bank.id}" value="${bank.color}" style="width:32px; height:24px;"></td>
+        <td>
+          <button class="btn btn-sm editBankBtn" data-id="${bank.id}">编辑</button>
+          <button class="btn btn-sm btn-danger delBankBtn" data-id="${bank.id}">删除</button>
+        </td>
+      </tr>`;
+    });
+    document.querySelectorAll('.bankColorPicker').forEach(input => {
+      input.onchange = (e) => {
+        const id = e.target.dataset.id;
+        const bank = banks.find(b => b.id === id);
+        if (bank) { bank.color = e.target.value; saveData(); renderCalendar(); }
+      };
+    });
+  }
+
+  function showDetailModal(cardId) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    const bank = banks.find(b => b.id === card.bankId);
+    const content = document.getElementById('detailContent');
+    content.innerHTML = `
+      <div class="detail-item"><strong>银行</strong><span>${bank?.name || '未知'}</span></div>
+      <div class="detail-item"><strong>卡组织</strong><span>${card.organizations.join(', ') || '-'}</span></div>
+      <div class="detail-item"><strong>等级</strong><span>${card.level || '-'}</span></div>
+      <div class="detail-item"><strong>尾号</strong><span>${card.lastFour}</span></div>
+      <div class="detail-item"><strong>昵称</strong><span>${card.nickname || '-'}</span></div>
+      <div class="detail-item"><strong>备注</strong><span>${card.note || '-'}</span></div>
+      <div class="detail-item"><strong>额度</strong><span>¥${card.cardLimit.toLocaleString()}</span></div>
+      <div class="detail-item"><strong>账单日</strong><span>${card.billDay === 0 ? '月底' : card.billDay+'日'}</span></div>
+      <div class="detail-item"><strong>还款方式</strong><span>${card.repaymentType === 'fixed' ? `固定${card.repaymentValue}日` : `账单后${card.repaymentValue}天`}</span></div>
+      <div class="detail-item"><strong>最近还款日</strong><span>${getUpcomingDueDate(card).getMonth()+1}/${getUpcomingDueDate(card).getDate()}</span></div>
+    `;
+    document.getElementById('detailModal').classList.remove('hide');
+  }
+
+  function exportData() {
+    const data = { banks, cards };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `credit_card_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.banks && Array.isArray(data.banks) && data.cards && Array.isArray(data.cards)) {
+          if (confirm('导入将覆盖当前所有数据，确定继续吗？')) {
+            banks = data.banks;
+            cards = data.cards;
+            saveData();
+            renderAll();
+            alert('导入成功！');
+          }
+        } else {
+          alert('文件格式不正确，请选择有效的备份文件。');
+        }
+      } catch (err) {
+        alert('解析失败，请检查文件是否为合法 JSON。');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function initEvents() {
+    document.getElementById('tabList').onclick = () => {
+      document.getElementById('listView').classList.remove('hide');
+      document.getElementById('calendarView').classList.add('hide');
+      document.getElementById('tabList').classList.add('active');
+      document.getElementById('tabCalendar').classList.remove('active');
+      document.getElementById('filterBar').classList.remove('hide');
+    };
+    document.getElementById('tabCalendar').onclick = () => {
+      document.getElementById('listView').classList.add('hide');
+      document.getElementById('calendarView').classList.remove('hide');
+      document.getElementById('tabCalendar').classList.add('active');
+      document.getElementById('tabList').classList.remove('active');
+      document.getElementById('filterBar').classList.add('hide');
+      renderCalendar();
+    };
+
+    simulateDateInput.valueAsDate = new Date();
+    simulateDateInput.onchange = () => { renderCardTable(); renderCalendar(); };
+    document.getElementById('resetDate').onclick = () => {
+      simulateDateInput.valueAsDate = new Date();
+      renderCardTable();
+      renderCalendar();
+    };
+
+    document.getElementById('filterBank').onchange = renderCardTable;
+    document.getElementById('billDayFrom').oninput = renderCardTable;
+    document.getElementById('billDayTo').oninput = renderCardTable;
+    document.getElementById('orgFilters').addEventListener('change', renderCardTable);
+    document.getElementById('clearFilters').onclick = () => {
+      document.getElementById('filterBank').selectedIndex = -1;
+      document.querySelectorAll('.orgFilterCheck').forEach(cb => cb.checked = false);
+      document.getElementById('billDayFrom').value = '';
+      document.getElementById('billDayTo').value = '';
+      renderCardTable();
+    };
+
+    document.querySelectorAll('.cal-filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.cal-filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        calFilterMode = this.dataset.filter;
+        renderCalendar();
+      });
+    });
+
+    document.getElementById('prevMonth').onclick = () => {
+      calMonth--; 
+      if(calMonth<0){ calMonth=11; calYear--; }
+      renderCalendar();
+    };
+    document.getElementById('nextMonth').onclick = () => {
+      calMonth++;
+      if(calMonth>11){ calMonth=0; calYear++; }
+      renderCalendar();
+    };
+
+    document.getElementById('addBankBtn').onclick = () => {
+      const name = prompt('请输入银行名称');
+      if (!name) return;
+      const limit = parseFloat(prompt('总额度（数字）', '100000'));
+      if (isNaN(limit)) return;
+      const color = defaultColors[banks.length % defaultColors.length];
+      banks.push({ id: Date.now().toString(), name, totalLimit: limit, color });
+      saveData(); renderAll();
+    };
+    document.getElementById('closeBankModal').onclick = () => document.getElementById('bankModal').classList.add('hide');
+    document.querySelector('h1').insertAdjacentHTML('afterend', '<button id="manageBankBtn" class="btn btn-outline btn-sm" style="margin-bottom:15px;">🏦 银行额度管理</button>');
+    document.getElementById('manageBankBtn').onclick = () => {
+      renderBankModal();
+      document.getElementById('bankModal').classList.remove('hide');
+    };
+    document.getElementById('bankListBody').addEventListener('click', (e) => {
+      const btn = e.target;
+      const id = btn.dataset.id;
+      if (btn.classList.contains('editBankBtn')) {
+        const bank = banks.find(b => b.id === id);
+        const newLimit = prompt(`编辑${bank.name}总额度`, bank.totalLimit);
+        if (newLimit && !isNaN(newLimit)) { bank.totalLimit = +newLimit; saveData(); renderAll(); }
+      } else if (btn.classList.contains('delBankBtn')) {
+        if (confirm('删除银行将同时删除其下所有卡片，确定？')) {
+          banks = banks.filter(b => b.id !== id);
+          cards = cards.filter(c => c.bankId !== id);
+          saveData(); renderAll();
+        }
+      }
+    });
+
+    document.getElementById('addCardBtn').onclick = () => openCardModal();
+    document.getElementById('cancelCardBtn').onclick = () => document.getElementById('cardModal').classList.add('hide');
+    document.getElementById('saveCardBtn').onclick = saveCard;
+    document.getElementById('repaymentType').onchange = function() {
+      document.getElementById('repaymentLabel').innerText = this.value === 'fixed' ? '固定还款日' : '账单后天数';
+    };
+    document.getElementById('newBankInCard').onclick = () => {
+      const name = prompt('新银行名称');
+      if (!name) return;
+      const limit = parseFloat(prompt('总额度', '100000'));
+      if (isNaN(limit)) return;
+      const color = defaultColors[banks.length % defaultColors.length];
+      const newBank = { id: Date.now().toString(), name, totalLimit: limit, color };
+      banks.push(newBank);
+      saveData();
+      renderBankSelects();
+      document.getElementById('cardBank').value = newBank.id;
+    };
+
+    // 月底复选框逻辑
+    const billDayInput = document.getElementById('billDay');
+    const billDayEndOfMonthCheck = document.getElementById('billDayEndOfMonth');
+    billDayEndOfMonthCheck.addEventListener('change', function() {
+      if (this.checked) {
+        billDayInput.disabled = true;
+        billDayInput.value = '';
+        billDayInput.placeholder = '月底';
+      } else {
+        billDayInput.disabled = false;
+        billDayInput.placeholder = '10';
+      }
+    });
+
+    cardTableBody.addEventListener('click', (e) => {
+      const btn = e.target;
+      const id = btn.dataset.id;
+      if (btn.classList.contains('viewDetailBtn')) {
+        showDetailModal(id);
+      } else if (btn.classList.contains('editCardBtn')) {
+        openCardModal(id);
+      } else if (btn.classList.contains('delCardBtn')) {
+        if (confirm('确定删除此卡片？')) {
+          cards = cards.filter(c => c.id !== id);
+          saveData(); renderAll();
+        }
+      }
+    });
+
+    document.getElementById('closeDetailBtn').onclick = () => document.getElementById('detailModal').classList.add('hide');
+
+    (function() {
+      const container = document.getElementById('orgCheckboxes');
+      const orgs = ['银联', 'Visa', 'Mastercard', 'JCB', 'Amex'];
+      container.innerHTML = orgs.map(org => `<label><input type="checkbox" value="${org}"> ${org}</label>`).join('');
+    })();
+
+    document.getElementById('exportBtn').addEventListener('click', exportData);
+    document.getElementById('importBtn').addEventListener('click', () => {
+      document.getElementById('importFileInput').click();
+    });
+    document.getElementById('importFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        importData(file);
+        e.target.value = '';
+      }
+    });
+  }
+
+  function openCardModal(id = null) {
+    editingCardId = id;
+    const modal = document.getElementById('cardModal');
+    document.getElementById('cardModalTitle').innerText = id ? '编辑信用卡' : '添加信用卡';
+    document.getElementById('cardBank').value = '';
+    document.getElementById('cardLevel').value = '';
+    document.getElementById('cardLastFour').value = '';
+    document.getElementById('cardNickname').value = '';
+    document.getElementById('cardNote').value = '';
+    document.getElementById('cardLimit').value = '';
+    document.getElementById('repaymentType').value = 'fixed';
+    document.getElementById('repaymentValue').value = '';
+    document.querySelectorAll('#orgCheckboxes input').forEach(cb => cb.checked = false);
+
+    const billDayInput = document.getElementById('billDay');
+    const billDayEndOfMonthCheck = document.getElementById('billDayEndOfMonth');
+    billDayEndOfMonthCheck.checked = false;
+    billDayInput.disabled = false;
+    billDayInput.value = '';
+    billDayInput.placeholder = '10';
+
+    if (id) {
+      const card = cards.find(c => c.id === id);
+      if (card) {
+        document.getElementById('cardBank').value = card.bankId;
+        document.getElementById('cardLevel').value = card.level || '';
+        document.getElementById('cardLastFour').value = card.lastFour;
+        document.getElementById('cardNickname').value = card.nickname || '';
+        document.getElementById('cardNote').value = card.note || '';
+        document.getElementById('cardLimit').value = card.cardLimit;
+        if (card.billDay === 0) {
+          billDayEndOfMonthCheck.checked = true;
+          billDayInput.disabled = true;
+          billDayInput.value = '';
+          billDayInput.placeholder = '月底';
+        } else {
+          document.getElementById('billDay').value = card.billDay;
+        }
+        document.getElementById('repaymentType').value = card.repaymentType;
+        document.getElementById('repaymentValue').value = card.repaymentValue;
+        document.getElementById('repaymentLabel').innerText = card.repaymentType === 'fixed' ? '固定还款日' : '账单后天数';
+        card.organizations.forEach(org => {
+          const cb = document.querySelector(`#orgCheckboxes input[value="${org}"]`);
+          if (cb) cb.checked = true;
+        });
+      }
+    }
+    modal.classList.remove('hide');
+  }
+
+  function saveCard() {
+    const bankId = document.getElementById('cardBank').value;
+    if (!bankId) return alert('请选择银行');
+    const orgs = Array.from(document.querySelectorAll('#orgCheckboxes input:checked')).map(cb => cb.value);
+    const level = document.getElementById('cardLevel').value;
+    const lastFour = document.getElementById('cardLastFour').value;
+    if (!lastFour) return alert('请输入卡号后四位');
+    const nickname = document.getElementById('cardNickname').value;
+    const note = document.getElementById('cardNote').value;
+    const cardLimit = parseFloat(document.getElementById('cardLimit').value) || 0;
+    const repaymentType = document.getElementById('repaymentType').value;
+    const repaymentValue = parseInt(document.getElementById('repaymentValue').value) || 1;
+
+    const isEndOfMonth = document.getElementById('billDayEndOfMonth').checked;
+    const billDay = isEndOfMonth ? 0 : (parseInt(document.getElementById('billDay').value) || 1);
+
+    const cardData = {
+      bankId, organizations: orgs, level, lastFour, nickname, note,
+      cardLimit, billDay, repaymentType, repaymentValue
+    };
+
+    if (editingCardId) {
+      const idx = cards.findIndex(c => c.id === editingCardId);
+      if (idx > -1) cards[idx] = { ...cards[idx], ...cardData };
+    } else {
+      cards.push({ id: Date.now().toString(), ...cardData });
+    }
+    saveData();
+    document.getElementById('cardModal').classList.add('hide');
+    renderAll();
+  }
+
+  // 启动
+  loadData();
+  initEvents();
+  renderAll();
+</script>
+</body>
+</html>
