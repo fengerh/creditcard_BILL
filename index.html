@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260427.1510</title>
+<title>信用卡管理 v20260427.1700</title>
 <style>
   :root {
     --bg: #f5f7fb;
     --card-bg: #ffffff;
-    --primary: #2b6ef0;
+    --primary: #f19603;
     --danger: #e74c3c;
     --warning: #f39c12;
     --info: #2ecc71;
@@ -462,9 +462,9 @@
           ⏳${dueDate.getMonth()+1}/${dueDate.getDate()}
         </td>
         <td>
-          <button class="btn btn-sm viewDetailBtn" data-id="${card.id}" title="查看详情">🔍</button>
-          <button class="btn btn-sm btn-outline editCardBtn" data-id="${card.id}">✏️</button>
-          <button class="btn btn-sm btn-danger delCardBtn" data-id="${card.id}">🗑</button>
+          <button class="btn btn-sm btn-outline editCardBtn" data-id="${card.id}" title="查看详情">🔍</button>
+          <button class="btn btn-sm btn-outline editCardBtn" data-id="${card.id}" title="编辑卡片">✏️</button>
+          <button class="btn btn-sm btn-outline editCardBtn" data-id="${card.id}" title="删除卡片">🗑</button>
         </td>
       `;
       cardTableBody.appendChild(row);
