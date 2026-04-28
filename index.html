@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260428.1340</title>
+<title>信用卡管理 v20260428.1400</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -409,7 +409,7 @@
 
   function renderBankSelects() {
     const filterBank = document.getElementById('filterBank');
-    filterBank.innerHTML = '<option value="">全部银行</option>';
+    filterBank.innerHTML = `<option value="">全部银行 (共${cards.length}张)</option>`;
     banks.forEach(b => {
       const count = cards.filter(c => c.bankId === b.id).length;
       filterBank.innerHTML += `<option value="${b.id}">${b.name} (${count}张)</option>`;
