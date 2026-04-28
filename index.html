@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260428.1400</title>
+<title>信用卡管理 v20260428.1420</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -105,6 +105,7 @@
 <div class="container">
   <h1>💳 信用卡管家
     <span style="margin-left:auto; display:flex; gap:10px;">
+      <button class="btn btn-sm btn-outline" id="manageBankBtn">🏦 银行及额度管理</button>
       <button class="btn btn-sm btn-outline" id="exportBtn">📥 导出备份</button>
       <button class="btn btn-sm btn-outline" id="importBtn">📤 导入恢复</button>
     </span>
@@ -193,13 +194,17 @@
 
 <div id="bankModal" class="modal hide">
   <div class="modal-content">
-    <h3>🏦 银行额度管理</h3>
-    <button class="btn btn-sm" id="addBankBtn">添加银行</button>
-    <table style="margin:15px 0; width:100%;">
-      <thead><tr><th>银行</th><th>总额度</th><th>颜色</th><th>操作</th></tr></thead>
-      <tbody id="bankListBody"></tbody>
-    </table>
-    <button class="btn btn-sm btn-outline" id="closeBankModal">关闭</button>
+    <h3>🏦 银行及额度管理 <span id="totalBankLimit" style="font-size:0.9rem; font-weight:normal; color:#555;"></span></h3>
+    <div class="table-wrap" style="margin:15px 0;">
+      <table style="width:100%;">
+        <thead><tr><th>银行</th><th>总额度</th><th>颜色</th><th>操作</th></tr></thead>
+        <tbody id="bankListBody"></tbody>
+      </table>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn btn-sm" id="addBankBtn">添加银行</button>
+      <button class="btn btn-sm btn-outline" id="closeBankModal">关闭</button>
+    </div>
   </div>
 </div>
 
@@ -614,17 +619,20 @@
   function renderBankModal() {
     const tbody = document.getElementById('bankListBody');
     tbody.innerHTML = '';
+    let totalAllBanks = 0;
     banks.forEach(bank => {
+      totalAllBanks += bank.totalLimit || 0;
       tbody.innerHTML += `<tr>
         <td>${bank.name}</td>
         <td>¥${bank.totalLimit.toLocaleString()}</td>
         <td><input type="color" class="bankColorPicker" data-id="${bank.id}" value="${bank.color}" style="width:32px; height:24px;"></td>
-        <td>
-          <button class="btn btn-sm editBankBtn" data-id="${bank.id}">编辑</button>
-          <button class="btn btn-sm btn-danger delBankBtn" data-id="${bank.id}">删除</button>
+        <td class="action-links">
+          <span class="action-link editBankBtn" data-id="${bank.id}">编辑</span>
+          <span class="action-link danger delBankBtn" data-id="${bank.id}">删除</span>
         </td>
       </tr>`;
     });
+    document.getElementById('totalBankLimit').innerText = `总授信额度：¥${totalAllBanks.toLocaleString()}`;
     document.querySelectorAll('.bankColorPicker').forEach(input => {
       input.onchange = (e) => {
         const id = e.target.dataset.id;
@@ -759,19 +767,18 @@
       saveData(); renderAll();
     };
     document.getElementById('closeBankModal').onclick = () => document.getElementById('bankModal').classList.add('hide');
-    document.querySelector('h1').insertAdjacentHTML('afterend', '<button id="manageBankBtn" class="btn btn-outline btn-sm" style="margin-bottom:15px;">🏦 银行额度管理</button>');
     document.getElementById('manageBankBtn').onclick = () => {
       renderBankModal();
       document.getElementById('bankModal').classList.remove('hide');
     };
     document.getElementById('bankListBody').addEventListener('click', (e) => {
-      const btn = e.target;
-      const id = btn.dataset.id;
-      if (btn.classList.contains('editBankBtn')) {
+      const target = e.target;
+      const id = target.dataset.id;
+      if (target.classList.contains('editBankBtn')) {
         const bank = banks.find(b => b.id === id);
         const newLimit = prompt(`编辑${bank.name}总额度`, bank.totalLimit);
         if (newLimit && !isNaN(newLimit)) { bank.totalLimit = +newLimit; saveData(); renderAll(); }
-      } else if (btn.classList.contains('delBankBtn')) {
+      } else if (target.classList.contains('delBankBtn')) {
         if (confirm('删除银行将同时删除其下所有卡片，确定？')) {
           banks = banks.filter(b => b.id !== id);
           cards = cards.filter(c => c.bankId !== id);
