@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260428.1420</title>
+<title>信用卡管理 v20260604.1500</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -68,6 +68,53 @@
   .month-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
   .month-nav span { font-weight: 600; }
 
+  /* 1. 让格子成为“容器查询”的参考，并隐藏溢出 */
+  .cal-day {
+    position: relative;
+    overflow: hidden; 
+    container-type: inline-size; /* 关键：让子元素可以获取这个格子的宽度 */
+  }
+
+  /* 2. 使用 Flexbox 完美居中，彻底解决上半部分被裁剪的问题 */
+  .month-bg-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    display: flex;
+    justify-content: center; /* 水平居中 */
+    align-items: center;     /* 垂直居中 */
+    
+    white-space: nowrap;     /* 绝对不换行 */
+    
+    /* ⭐ 核心：字体大小根据格子宽度自动计算。
+      12cqw 代表字体高度为格子宽度的 12%。
+      如果是 12月，你可以改大到 14cqw；如果是 6月，可以改大到 18cqw */
+    font-size: 25cqw;        
+    
+    font-weight: 900;
+    color: rgba(0, 0, 0, 0.05); /* 灰色半透明 */
+
+    /* ⭐ 核心修改：横向拉伸，让字变宽变胖！
+    1.3 表示拉宽 30%。
+    你可以改成 1.5 (更宽) 或 1.2 (稍微宽一点) */
+    transform: scaleX(1.3); 
+    
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+
+  /* 3. 确保日期数字和事件标签在最上层 */
+  .cal-day .num, 
+  .cal-day .marker {
+    position: relative;
+    z-index: 1;
+  }
+  
+
   .cal-filter-bar { margin-bottom: 15px; display: flex; gap: 10px; }
   .cal-filter-btn { padding:4px 12px; font-size:0.8rem; border:1px solid var(--border); background: white; border-radius:4px; cursor:pointer; }
   .cal-filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
@@ -124,9 +171,16 @@
       <button class="tab-btn active" id="tabList">📋 卡片列表</button>
       <button class="tab-btn" id="tabCalendar">📅 日历视图</button>
     </div>
-    <div style="display:flex; gap:10px; align-items:center;">
-      <label>📆 推算日期</label>
-      <input type="date" id="simulateDate" style="padding:6px; border-radius:6px; border:1px solid var(--border);">
+    <div style="display:flex; gap:8px; align-items:center;">
+      <label style="margin-right: 4px;">📆 推算日期</label>
+     <input type="date" id="simulateDate" style="padding:6px; border-radius:6px; border:1px solid var(--border);">
+     
+      <!-- ⭐ 新增前一天按钮 -->
+      <button class="btn btn-sm" id="prevDay" title="前一天">前一天</button>
+             
+      <!-- ⭐ 新增后一天按钮 -->
+      <button class="btn btn-sm" id="nextDay" title="后一天">后一天</button>
+      
       <button class="btn btn-sm" id="resetDate">今天</button>
     </div>
   </div>
@@ -274,16 +328,17 @@
     }
   }
 
-  function getActualBillDay(card, year, month) {
-    if (card.billDay === 0) return new Date(year, month, 0).getDate();
-    const maxDay = new Date(year, month, 0).getDate();
-    return Math.min(card.billDay, maxDay);
-  }
+  function getActualBillDay(card, year, monthIndex) {
+      // monthIndex: 0-11
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+      if (card.billDay === 0) return daysInMonth;
+      return Math.min(card.billDay, daysInMonth);
+}
 
-  function safeDate(year, month, day) {
-    if (day === 0) return new Date(year, month, 0).getDate();
-    const max = new Date(year, month, 0).getDate();
-    return Math.min(day, max);
+  function safeDate(year, monthIndex, day) {
+      if (day === 0) return new Date(year, monthIndex + 1, 0).getDate();
+      const max = new Date(year, monthIndex + 1, 0).getDate();
+      return Math.min(day, max);
   }
 
   // 计算下一个账单日 (>= fromDate)
@@ -292,13 +347,13 @@
     const y = ref.getFullYear();
     const m = ref.getMonth();
     const d = ref.getDate();
-    const thisMonthBillDay = getActualBillDay(card, y, m + 1);
+    const thisMonthBillDay = getActualBillDay(card, y, m);
     if (d <= thisMonthBillDay) {
       return new Date(y, m, thisMonthBillDay);
     }
     const nextMonth = m + 1;
     const nextYear = nextMonth === 12 ? y + 1 : y;
-    const nextBillDay = getActualBillDay(card, nextYear, (nextMonth % 12) + 1);
+    const nextBillDay = getActualBillDay(card, nextYear, (nextMonth % 12));
     return new Date(nextYear, nextMonth % 12, nextBillDay);
   }
 
@@ -308,56 +363,110 @@
     ref.setHours(0, 0, 0, 0);
     const y = ref.getFullYear();
     const m = ref.getMonth(); // 0-11
+    const d = ref.getDate();
 
     if (card.repaymentType === 'fixed') {
-      // 固定还款日：直接找当月或下月第一个 >= ref 的日期
-      const dueDay = card.repaymentValue;
-      const thisMonthDue = new Date(y, m, safeDate(y, m + 1, dueDay));
-      thisMonthDue.setHours(0, 0, 0, 0);
-      if (thisMonthDue >= ref) return thisMonthDue;
-      const nextMonth = m + 1;
-      const nextYear = nextMonth === 12 ? y + 1 : y;
-      const nextDue = new Date(nextYear, nextMonth % 12, safeDate(nextYear, (nextMonth % 12) + 1, dueDay));
-      nextDue.setHours(0, 0, 0, 0);
-      return nextDue;
-    } else {
-      // 账单日后 N 天：从参考日期所在月开始，逐月向后查找，直到还款日 >= ref
-      // 需要循环，因为可能存在参考日期已超过本月还款日，需要往后推
-      let checkMonth = m;
-      let checkYear = y;
-      for (let i = 0; i < 14; i++) {
-        const billDay = getActualBillDay(card, checkYear, checkMonth + 1);
-        const billDate = new Date(checkYear, checkMonth, billDay);
-        const due = new Date(billDate);
-        due.setDate(due.getDate() + card.repaymentValue);
-        due.setHours(0, 0, 0, 0);
-        if (due >= ref) return due;
-        // 进入下一个月
-        checkMonth++;
-        if (checkMonth > 11) {
-          checkMonth = 0;
-          checkYear++;
+        // 固定还款日
+        const dueDay = card.repaymentValue;
+        // 当月可能的还款日
+        const thisMonthDue = new Date(y, m, safeDate(y, m, dueDay));
+        thisMonthDue.setHours(0, 0, 0, 0);
+        if (thisMonthDue >= ref) return thisMonthDue;
+        // 下个月
+        let nextMonth = m + 1;
+        let nextYear = y;
+        if (nextMonth > 11) {
+            nextMonth = 0;
+            nextYear++;
         }
-      }
-      // 保险兜底
-      return new Date(2099, 0, 1);
+        const nextDue = new Date(nextYear, nextMonth, safeDate(nextYear, nextMonth, dueDay));
+        nextDue.setHours(0, 0, 0, 0);
+        return nextDue;
+    } 
+    else {
+        // 账单日后 N 天 —— 稳健算法：取上一个和下一个账单日对应的还款日，选最近的一个
+        const afterDays = card.repaymentValue;
+        const ref = new Date(fromDate);
+        ref.setHours(0, 0, 0, 0);
+
+        // 辅助：获取某年某月的账单日（返回 Date 对象）
+        function getBillDate(year, monthIndex) {
+            if (card.billDay === 0) {
+                // 月底
+                const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+                return new Date(year, monthIndex, lastDay);
+            } else {
+                const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+                const actualDay = Math.min(card.billDay, daysInMonth);
+                return new Date(year, monthIndex, actualDay);
+            }
+        }
+
+        // 1. 找上一个账单日（小于等于 ref 且最近）
+        let prevBillDate = null;
+        let y = ref.getFullYear();
+        let m = ref.getMonth();
+        for (let i = 0; i < 12; i++) {
+            const candidate = getBillDate(y, m);
+            if (candidate <= ref) {
+                prevBillDate = candidate;
+                break;
+            }
+            m--;
+            if (m < 0) {
+                m = 11;
+                y--;
+            }
+        }
+        if (!prevBillDate) prevBillDate = getBillDate(ref.getFullYear(), ref.getMonth());
+
+        // 2. 找下一个账单日（大于 ref 且最近）
+        let nextBillDate = null;
+        y = ref.getFullYear();
+        m = ref.getMonth();
+        for (let i = 0; i < 12; i++) {
+            const candidate = getBillDate(y, m);
+            if (candidate > ref) {
+                nextBillDate = candidate;
+                break;
+            }
+            m++;
+            if (m > 11) {
+                m = 0;
+                y++;
+            }
+        }
+        if (!nextBillDate) nextBillDate = getBillDate(ref.getFullYear() + 1, 0);
+
+        // 3. 计算两个还款日
+        const due1 = new Date(prevBillDate);
+        due1.setDate(due1.getDate() + afterDays);
+        const due2 = new Date(nextBillDate);
+        due2.setDate(due2.getDate() + afterDays);
+
+        // 4. 筛选大于等于 ref 且最近的那个
+        const candidates = [due1, due2].filter(d => d >= ref);
+        candidates.sort((a, b) => a - b);
+        return candidates[0];
     }
   }
 
-  // 获取最近未过期的还款日（用于提醒高亮）
+  // 获取最近未过期的还款日，使用推算日期（用于提醒高亮）
   function getUpcomingDueDate(card) {
-    return getNextDueDate(card, new Date());
+      const refDate = document.getElementById('simulateDate').valueAsDate || new Date();
+      return getNextDueDate(card, refDate);
   }
 
   function getUrgencyClass(dueDate) {
-    const now = new Date(); now.setHours(0,0,0,0);
-    const due = new Date(dueDate); due.setHours(0,0,0,0);
-    const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'urgent-red';
-    if (diffDays <= 3) return 'urgent-orange';
-    if (diffDays <= 7) return 'urgent-yellow';
-    return '';
-  }
+      const refDate = document.getElementById('simulateDate').valueAsDate || new Date();
+      const now = new Date(refDate); now.setHours(0,0,0,0);
+      const due = new Date(dueDate); due.setHours(0,0,0,0);
+      const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) return 'urgent-red';
+      if (diffDays <= 3) return 'urgent-orange';
+      if (diffDays <= 7) return 'urgent-yellow';
+      return '';
+}
 
   function getEventsForMonth(card, year, month) {
     const events = [];
@@ -365,7 +474,7 @@
     const color = bank?.color || '#666';
     const label = `${bank?.name || '未知'}${card.lastFour}${card.nickname ? ' '+card.nickname : ''}`;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const actualBillDay = getActualBillDay(card, year, month+1);
+    const actualBillDay = getActualBillDay(card, year, month);
     if (actualBillDay >= 1 && actualBillDay <= daysInMonth) {
       events.push({ day: actualBillDay, type: 'bill', label, color });
     }
@@ -579,7 +688,13 @@
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = document.createElement('div');
       cell.className = 'cal-day';
-      cell.innerHTML = `<span class="num">${d}</span>`;
+      
+      if (d === 1) {
+        // ⭐ 恢复最简单的普通文本结构
+        cell.innerHTML = `<span class="month-bg-label">${month + 1}</span><span class="num">${d}</span>`;
+      } else {
+        cell.innerHTML = `<span class="num">${d}</span>`;
+      }
 
       if (highlightTime) {
         const currentTime = new Date(year, month, d).getTime();
@@ -718,11 +833,77 @@
     };
 
     simulateDateInput.valueAsDate = new Date();
-    simulateDateInput.onchange = () => { renderCardTable(); renderCalendar(); };
+    simulateDateInput.onchange = () => {
+    // ⭐ 当手动选择日期时，也让日历月份跟随
+    const selectedDate = simulateDateInput.valueAsDate;
+    if (selectedDate) {
+      calYear = selectedDate.getFullYear();
+      calMonth = selectedDate.getMonth();
+    }
+    renderCardTable();
+    renderCalendar();
+  };
+
+    // --- 这是你原有的“今天”按钮代码 ---
     document.getElementById('resetDate').onclick = () => {
-      simulateDateInput.valueAsDate = new Date();
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      simulateDateInput.value = `${year}-${month}-${day}`; // 统一使用字符串赋值
+
+      // ⭐ 让日历月份跟随今天的日期
+      calYear = now.getFullYear();
+      calMonth = now.getMonth();
+      
       renderCardTable();
       renderCalendar();
+    };
+
+    // --- ⭐ 修复版：前一天和后一天 ---
+    
+    // 提取公共逻辑：根据偏移量修改日期
+    function shiftSimulateDate(daysOffset) {
+      // 1. 获取当前输入框的字符串值 (例如 "2026-06-04")
+      let currentVal = simulateDateInput.value;
+      let d;
+      
+      if (currentVal) {
+        // ⭐ 关键修复：在日期字符串后加上 'T00:00:00'
+        // 这会强制 JavaScript 把它当作“本地时间”来解析，彻底避免 UTC 时区偏差！
+        d = new Date(currentVal + 'T00:00:00');
+      } else {
+        // 如果输入框为空，默认取今天的本地时间
+        const now = new Date();
+        d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      }
+      
+      // 2. 加减天数 (此时 d 是纯粹的本地时间，加减绝对准确)
+      d.setDate(d.getDate() + daysOffset);
+      
+      // 3. 重新拼接成 'YYYY-MM-DD' 格式的字符串
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const newDateStr = `${year}-${month}-${day}`;
+      
+      // 4. 直接赋值给 .value (抛弃有坑的 .valueAsDate)
+      simulateDateInput.value = newDateStr;
+
+      // ⭐ 关键修改：让日历月份跟随新的推算日期
+      calYear = d.getFullYear();
+      calMonth = d.getMonth();
+      
+      // 5. 刷新页面
+      renderCardTable();
+      renderCalendar();
+    }
+
+    
+
+    // 绑定点击事件
+    document.getElementById('prevDay').onclick = () => shiftSimulateDate(-1);
+    document.getElementById('nextDay').onclick = () => shiftSimulateDate(1);
     };
 
     document.getElementById('filterBank').onchange = renderCardTable;
@@ -853,7 +1034,7 @@
         e.target.value = '';
       }
     });
-  }
+  
 
   function openCardModal(id = null) {
     editingCardId = id;
@@ -941,6 +1122,8 @@
   loadData();
   initEvents();
   renderAll();
+
+  
 </script>
 </body>
 </html>
