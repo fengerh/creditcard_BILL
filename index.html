@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260604.1500</title>
+<title>信用卡管理 v20260604.1550</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -163,7 +163,7 @@
     <span id="alertToday" class="alert-item alert-red">今日到期 0</span>
     <span id="alert3day" class="alert-item alert-orange">3天内 0</span>
     <span id="alert7day" class="alert-item alert-yellow">7天内 0</span>
-    <span style="margin-left:auto; font-size:0.8rem;">基于最近还款日自动刷新</span>
+    <span style="margin-left:auto; font-size:0.8rem;">基于推算日期刷新</span>
   </div>
 
   <div class="toolbar">
@@ -640,19 +640,27 @@
   }
 
   function updateAlerts() {
-    const now = new Date(); now.setHours(0,0,0,0);
-    let today = 0, threeDay = 0, sevenDay = 0;
-    cards.forEach(c => {
-      const dueDate = getUpcomingDueDate(c);
-      const diff = Math.ceil((dueDate - now) / (1000*60*60*24));
-      if (diff === 0) today++;
-      if (diff <= 3) threeDay++;
-      if (diff <= 7) sevenDay++;
-    });
-    document.getElementById('alertToday').innerText = `今日到期 ${today}`;
-    document.getElementById('alert3day').innerText = `3天内 ${threeDay}`;
-    document.getElementById('alert7day').innerText = `7天内 ${sevenDay}`;
-  }
+      const refDate = document.getElementById('simulateDate').valueAsDate || new Date();
+      const ref = new Date(refDate);
+      ref.setHours(0, 0, 0, 0);
+      let today = 0;
+      let threeDay = 0;   // 1-3天
+      let sevenDay = 0;   // 4-7天
+      cards.forEach(c => {
+          const dueDate = getNextDueDate(c, ref);
+          const diff = Math.ceil((dueDate - ref) / (1000 * 60 * 60 * 24));
+          if (diff === 0) {
+              today++;
+          } else if (diff <= 3) {
+              threeDay++;
+          } else if (diff <= 7) {
+              sevenDay++;
+          }
+      });
+      document.getElementById('alertToday').innerText = `今天到期 ${today}`;
+      document.getElementById('alert3day').innerText = `3天内 ${threeDay}`;
+      document.getElementById('alert7day').innerText = `7天内 ${sevenDay}`;
+}
 
   // 日历渲染（保持不变）
   let calYear, calMonth;
@@ -842,6 +850,7 @@
     }
     renderCardTable();
     renderCalendar();
+    updateAlerts();   // 新增这一行
   };
 
     // --- 这是你原有的“今天”按钮代码 ---
@@ -858,6 +867,7 @@
       
       renderCardTable();
       renderCalendar();
+      updateAlerts();   // 加上这一行
     };
 
     // --- ⭐ 修复版：前一天和后一天 ---
@@ -897,6 +907,7 @@
       // 5. 刷新页面
       renderCardTable();
       renderCalendar();
+      updateAlerts();   // 加上这一行
     }
 
     
