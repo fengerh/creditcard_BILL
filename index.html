@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260604.1550</title>
+<title>信用卡管理 v20260605.2100</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -170,6 +170,14 @@
     <div style="display:flex; gap:10px;">
       <button class="tab-btn active" id="tabList">📋 卡片列表</button>
       <button class="tab-btn" id="tabCalendar">📅 日历视图</button>
+      <!-- 添加卡片按钮，初始显示（因为默认列表视图） -->
+        <button class="btn" id="addCardBtn" style="margin-left: 10px;">＋添加卡片</button>
+        <!-- 三个筛选按钮，初始隐藏（因为默认显示列表视图） -->
+        <div id="calendarFilterBtns" style="display: none; margin-left: 15px; gap: 8px;">
+            <button class="cal-filter-btn active" data-filter="all">全部</button>
+            <button class="cal-filter-btn" data-filter="bill">仅账单日</button>
+            <button class="cal-filter-btn" data-filter="due">仅还款日</button>
+        </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
       <label style="margin-right: 4px;">📆 推算日期</label>
@@ -197,7 +205,7 @@
       <input type="number" id="billDayTo" placeholder="到" min="1" max="31" style="width:70px;">
       <button class="btn btn-sm btn-outline" id="clearFilters">清除</button>
     </div>
-    <button class="btn" id="addCardBtn">＋ 添加卡片</button>
+    
   </div>
 
   <div id="listView">
@@ -222,11 +230,7 @@
   </div>
 
   <div id="calendarView" class="hide">
-    <div class="cal-filter-bar">
-      <button class="cal-filter-btn active" data-filter="all">全部</button>
-      <button class="cal-filter-btn" data-filter="bill">仅账单日</button>
-      <button class="cal-filter-btn" data-filter="due">仅还款日</button>
-    </div>
+    
     <div class="month-nav">
       <button id="prevMonth" class="btn btn-sm btn-outline">◀ 上月</button>
       <span id="calMonthLabel"></span>
@@ -697,12 +701,13 @@
       const cell = document.createElement('div');
       cell.className = 'cal-day';
       
-      if (d === 1) {
-        // ⭐ 恢复最简单的普通文本结构
-        cell.innerHTML = `<span class="month-bg-label">${month + 1}</span><span class="num">${d}</span>`;
-      } else {
+    if (d === 1) {
+        // 月份显示为两位数字（01, 02, ..., 12）
+        const formattedMonth = String(month + 1).padStart(2, '0');
+        cell.innerHTML = `<span class="month-bg-label">${formattedMonth}</span><span class="num">${d}</span>`;
+    } else {
         cell.innerHTML = `<span class="num">${d}</span>`;
-      }
+    }
 
       if (highlightTime) {
         const currentTime = new Date(year, month, d).getTime();
@@ -719,7 +724,8 @@
         }
       }
 
-      cards.forEach(card => {
+      const filteredCards = getFilteredCards();  // 复用列表视图的筛选函数
+      filteredCards.forEach(card => {
         let events = getEventsForMonth(card, year, month);
         if (calFilterMode === 'bill') events = events.filter(e => e.type === 'bill');
         else if (calFilterMode === 'due') events = events.filter(e => e.type === 'due');
@@ -830,13 +836,21 @@
       document.getElementById('tabList').classList.add('active');
       document.getElementById('tabCalendar').classList.remove('active');
       document.getElementById('filterBar').classList.remove('hide');
+      // 显示添加卡片按钮（列表视图可见）
+      document.getElementById('addCardBtn').style.display = 'inline-block';
+      // 隐藏三个筛选按钮
+      document.getElementById('calendarFilterBtns').style.display = 'none';
     };
     document.getElementById('tabCalendar').onclick = () => {
       document.getElementById('listView').classList.add('hide');
       document.getElementById('calendarView').classList.remove('hide');
       document.getElementById('tabCalendar').classList.add('active');
       document.getElementById('tabList').classList.remove('active');
-      document.getElementById('filterBar').classList.add('hide');
+      //document.getElementById('filterBar').classList.add('hide');
+      // 隐藏添加卡片按钮（日历视图不可见）
+      document.getElementById('addCardBtn').style.display = 'none';
+      // 显示三个筛选按钮
+      document.getElementById('calendarFilterBtns').style.display = 'flex';
       renderCalendar();
     };
 
@@ -917,25 +931,36 @@
     document.getElementById('nextDay').onclick = () => shiftSimulateDate(1);
     };
 
-    document.getElementById('filterBank').onchange = renderCardTable;
-    document.getElementById('billDayFrom').oninput = renderCardTable;
-    document.getElementById('billDayTo').oninput = renderCardTable;
-    document.getElementById('orgFilters').addEventListener('change', renderCardTable);
-    document.getElementById('clearFilters').onclick = () => {
-      document.getElementById('filterBank').selectedIndex = -1;
-      document.querySelectorAll('.orgFilterCheck').forEach(cb => cb.checked = false);
-      document.getElementById('billDayFrom').value = '';
-      document.getElementById('billDayTo').value = '';
-      renderCardTable();
+    // 定义一个刷新函数：同时更新列表视图和日历视图（如果可见）
+    const refreshViews = () => {
+        renderCardTable();
+        if (!document.getElementById('calendarView').classList.contains('hide')) {
+            renderCalendar();
+        }
     };
 
-    document.querySelectorAll('.cal-filter-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.cal-filter-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        calFilterMode = this.dataset.filter;
-        renderCalendar();
-      });
+    document.getElementById('filterBank').onchange = refreshViews;
+    document.getElementById('billDayFrom').oninput = refreshViews;
+    document.getElementById('billDayTo').oninput = refreshViews;
+    document.getElementById('orgFilters').addEventListener('change', refreshViews);
+    document.getElementById('clearFilters').onclick = () => {
+        document.getElementById('filterBank').selectedIndex = -1;
+        document.querySelectorAll('.orgFilterCheck').forEach(cb => cb.checked = false);
+        document.getElementById('billDayFrom').value = '';
+        document.getElementById('billDayTo').value = '';
+        refreshViews();
+    };
+
+      // 使用事件委托，绑定到父容器（可以是 document 或 .toolbar）
+      document.addEventListener('click', function(e) {
+          const btn = e.target.closest('.cal-filter-btn');
+          if (!btn) return;
+          // 更新激活样式
+          document.querySelectorAll('.cal-filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          calFilterMode = btn.dataset.filter;
+          renderCalendar();
+      
     });
 
     document.getElementById('prevMonth').onclick = () => {
