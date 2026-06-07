@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260605.2100</title>
+<title>信用卡管理 v20260607.1018</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -18,7 +18,7 @@
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-  .container { max-width: 1400px; margin:0 auto; }
+  .container { max-width: 1400px; margin:0 auto; overflow-x: hidden;}
   h1 { font-size: 1.8rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
   .alert-bar { background: #fff3cd; border:1px solid #ffc107; border-radius:8px; padding:10px 15px; margin-bottom:20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
   .alert-item { font-size:0.9rem; padding:4px 10px; border-radius:4px; }
@@ -27,7 +27,7 @@
   .alert-yellow { background: #fff9e6; color: #b8860b; }
 
   .tabs { display:flex; gap:10px; margin-bottom:20px; }
-  .tab-btn { padding:8px 20px; border:1px solid var(--border); background: white; border-radius:6px; cursor:pointer; transition:0.2s; }
+  .tab-btn { padding:8px 20px; font-size: 1rem;border:1px solid var(--border); background: white; border-radius:6px; cursor:pointer; transition:0.2s; }
   .tab-btn.active { background: var(--primary); color:white; border-color:var(--primary); }
 
   .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap:15px; flex-wrap: wrap; }
@@ -146,6 +146,105 @@
     .cal-day .marker { font-size: 0.55rem; }
     .detail-item strong { width: 70px; }
   }
+
+
+  /* 表格内容居中 */
+  #cardTable th,
+  #cardTable td {
+      text-align: center;
+      vertical-align: middle;
+  }
+
+  .action-links {
+      display: flex;
+      
+      justify-content: center;  /* 让内部链接居中 */
+  }
+
+  html {
+      overflow-y: scroll;
+  }
+
+  /* 银行及额度管理表格全部居中 */
+  #bankModal table th,
+  #bankModal table td {
+      text-align: center;
+      vertical-align: middle;
+  }
+
+  /* 推算日期一体式组合框 */
+  .date-picker-group {
+      display: inline-flex;
+      align-items: center;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+  }
+
+  .date-picker-group .date-label {
+      padding: 6px 10px;
+      background: #f8fafd;
+      border-right: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--text);
+  }
+
+  .date-picker-group .date-input {
+      border: none;
+      padding: 6px 8px;
+      font-size: 0.9rem;
+      outline: none;
+      min-width: 140px;
+  }
+
+  .date-picker-group .date-input:focus {
+      background: #fffef7;
+  }
+
+  /* 账单日范围筛选一体式组合框 */
+  .billday-group {
+      display: inline-flex;
+      align-items: center;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #fff;
+  }
+
+  .billday-group .billday-label {
+      padding: 6px 10px;
+      background: #f8fafd;
+      border-right: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--text);
+  }
+
+  .billday-group .billday-input {
+      border: none;
+      padding: 6px 8px;
+      font-size: 0.9rem;
+      outline: none;
+      width: 70px;
+      text-align: center;
+  }
+
+  .billday-group .billday-input:focus {
+      background: #fffef7;
+  }
+
+  .billday-group .billday-sep {
+      padding: 0 4px;
+      color: #aaa;
+      font-weight: 500;
+      user-select: none;
+  }
+
+  
+
 </style>
 </head>
 <body>
@@ -171,7 +270,7 @@
       <button class="tab-btn active" id="tabList">📋 卡片列表</button>
       <button class="tab-btn" id="tabCalendar">📅 日历视图</button>
       <!-- 添加卡片按钮，初始显示（因为默认列表视图） -->
-        <button class="btn" id="addCardBtn" style="margin-left: 10px;">＋添加卡片</button>
+        <button class="cal-filter-btn active" id="addCardBtn" style="margin-left: 10px;">＋添加卡片</button>
         <!-- 三个筛选按钮，初始隐藏（因为默认显示列表视图） -->
         <div id="calendarFilterBtns" style="display: none; margin-left: 15px; gap: 8px;">
             <button class="cal-filter-btn active" data-filter="all">账单及还款日</button>
@@ -180,31 +279,37 @@
         </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
-      <label style="margin-right: 4px;">📆 推算日期</label>
-     <input type="date" id="simulateDate" style="padding:6px; border-radius:6px; border:1px solid var(--border);">
-     
-      <!-- ⭐ 新增前一天按钮 -->
-      <button class="btn btn-sm" id="prevDay" title="前一天">前一天</button>
-             
-      <!-- ⭐ 新增后一天按钮 -->
-      <button class="btn btn-sm" id="nextDay" title="后一天">后一天</button>
       
-      <button class="btn btn-sm" id="resetDate">今天</button>
+        <div class="date-picker-group">
+          <span class="date-label">推算账单</span>
+          <input type="date" id="simulateDate" class="date-input">
+        </div>
+
+        <button class="btn btn-sm " id="prevDay">◀</button>
+        <button class="btn btn-sm " id="nextDay">▶</button>
+        <button class="btn btn-sm " id="resetDate">今天</button>
     </div>
-  </div>
+      
+    </div>
+  
 
   <div class="toolbar" id="filterBar">
-    <div class="filters">
+    <div class="filters" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
       <select id="filterBank" multiple size="1" style="width:160px;" title="银行（可多选）">
         <option value="">全部银行</option>
       </select>
-      <div style="display:flex; gap:5px;" id="orgFilters"></div>
-      <span>账单日</span>
-      <input type="number" id="billDayFrom" placeholder="从" min="1" max="31" style="width:70px;">
-      <span>-</span>
-      <input type="number" id="billDayTo" placeholder="到" min="1" max="31" style="width:70px;">
-      <button class="btn btn-sm btn-outline" id="clearFilters">清除</button>
+      <div style="display:flex; gap:10px;" id="orgFilters"></div>
+      <div style="flex:1;"></div> 
+      <div style="margin-left: auto; display: flex; gap: 10px; align-items:center;">
+        <div class="billday-group">
+            <span class="billday-label">账单日</span>
+            <input type="number" id="billDayFrom" class="billday-input" placeholder="从" min="1" max="31">
+            <span class="billday-sep">—</span>
+            <input type="number" id="billDayTo" class="billday-input" placeholder="到" min="1" max="31">
+        </div>
+        <button class="btn btn-sm btn-outline" id="clearFilters">清除筛选</button>
     </div>
+  </div>
     
   </div>
 
@@ -255,7 +360,7 @@
     <h3>🏦 银行及额度管理 <span id="totalBankLimit" style="font-size:0.9rem; font-weight:normal; color:#555;"></span></h3>
     <div class="table-wrap" style="margin:15px 0;">
       <table style="width:100%;">
-        <thead><tr><th>银行</th><th>总额度</th><th>颜色</th><th>操作</th></tr></thead>
+        <thead><tr><th>银行列表</th><th>总额度</th><th>颜色</th><th>操作</th></tr></thead>
         <tbody id="bankListBody"></tbody>
       </table>
     </div>
@@ -678,7 +783,7 @@
     }
     const simulateDate = simulateDateInput.valueAsDate || new Date();
     document.getElementById('calMonthLabel').innerText =
-      `${calYear}年${calMonth+1}月  —  ${(new Date(calYear, calMonth+1)).getFullYear()}年${(new Date(calYear, calMonth+1)).getMonth()+1}月`;
+      `${calYear}年${calMonth+1}月  ——  ${(new Date(calYear, calMonth+1)).getFullYear()}年${(new Date(calYear, calMonth+1)).getMonth()+1}月`;
 
     const grid1 = document.getElementById('calendarGrid1');
     const grid2 = document.getElementById('calendarGrid2');
@@ -838,6 +943,7 @@
       document.getElementById('filterBar').classList.remove('hide');
       // 显示添加卡片按钮（列表视图可见）
       document.getElementById('addCardBtn').style.display = 'inline-block';
+      document.getElementById('addCardBtn').classList.add('active'); 
       // 隐藏三个筛选按钮
       document.getElementById('calendarFilterBtns').style.display = 'none';
     };
@@ -1122,36 +1228,45 @@
     modal.classList.remove('hide');
   }
 
-  function saveCard() {
-    const bankId = document.getElementById('cardBank').value;
-    if (!bankId) return alert('请选择银行');
-    const orgs = Array.from(document.querySelectorAll('#orgCheckboxes input:checked')).map(cb => cb.value);
-    const level = document.getElementById('cardLevel').value;
-    const lastFour = document.getElementById('cardLastFour').value;
-    if (!lastFour) return alert('请输入卡号后四位');
-    const nickname = document.getElementById('cardNickname').value;
-    const note = document.getElementById('cardNote').value;
-    const cardLimit = parseFloat(document.getElementById('cardLimit').value) || 0;
-    const repaymentType = document.getElementById('repaymentType').value;
-    const repaymentValue = parseInt(document.getElementById('repaymentValue').value) || 1;
+    function saveCard() {
+      const bankId = document.getElementById('cardBank').value;
+      if (!bankId) return alert('请选择银行');
+      const bank = banks.find(b => b.id === bankId);
+      if (!bank) return alert('银行不存在');
 
-    const isEndOfMonth = document.getElementById('billDayEndOfMonth').checked;
-    const billDay = isEndOfMonth ? 0 : (parseInt(document.getElementById('billDay').value) || 1);
+      const orgs = Array.from(document.querySelectorAll('#orgCheckboxes input:checked')).map(cb => cb.value);
+      const level = document.getElementById('cardLevel').value;
+      const lastFour = document.getElementById('cardLastFour').value;
+      if (!lastFour) return alert('请输入卡号后四位');
+      const nickname = document.getElementById('cardNickname').value;
+      const note = document.getElementById('cardNote').value;
+      const cardLimit = parseFloat(document.getElementById('cardLimit').value) || 0;
+      const repaymentType = document.getElementById('repaymentType').value;
+      const repaymentValue = parseInt(document.getElementById('repaymentValue').value) || 1;
 
-    const cardData = {
-      bankId, organizations: orgs, level, lastFour, nickname, note,
-      cardLimit, billDay, repaymentType, repaymentValue
-    };
+      const isEndOfMonth = document.getElementById('billDayEndOfMonth').checked;
+      const billDay = isEndOfMonth ? 0 : (parseInt(document.getElementById('billDay').value) || 1);
 
-    if (editingCardId) {
-      const idx = cards.findIndex(c => c.id === editingCardId);
-      if (idx > -1) cards[idx] = { ...cards[idx], ...cardData };
-    } else {
-      cards.push({ id: Date.now().toString(), ...cardData });
-    }
-    saveData();
-    document.getElementById('cardModal').classList.add('hide');
-    renderAll();
+      // 额度校验：单张卡片额度不能超过银行总额度（共享关系）
+      if (cardLimit > bank.totalLimit) {
+          alert(`该银行总额度为 ${bank.totalLimit.toLocaleString()}元，卡片额度不能超过银行总额度。请调整卡片额度或增加银行总额度。`);
+          return;
+      }
+
+      const cardData = {
+          bankId, organizations: orgs, level, lastFour, nickname, note,
+          cardLimit, billDay, repaymentType, repaymentValue
+      };
+
+      if (editingCardId) {
+          const idx = cards.findIndex(c => c.id === editingCardId);
+          if (idx > -1) cards[idx] = { ...cards[idx], ...cardData };
+      } else {
+          cards.push({ id: Date.now().toString(), ...cardData });
+      }
+      saveData();
+      document.getElementById('cardModal').classList.add('hide');
+      renderAll();
   }
 
   // 启动
