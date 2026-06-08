@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260607.1018</title>
+<title>信用卡管理 v20260608.1010</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -34,8 +34,8 @@
   .filters { display: flex; gap:10px; flex-wrap: wrap; align-items: center; }
   .filters select, .filters input, .filters button { padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.9rem; background:white; }
   .btn { background: var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:500; }
-  .btn-sm { padding:6px 12px; font-size:0.8rem; }
-  .btn-outline { background: white; color: var(--primary); border:1px solid var(--primary); }
+  .btn-sm { padding:6px 12px; font-size:0.9rem; }
+  .btn-outline { background: white; color: var(--primary); border:1px solid var(--primary);}
   .btn-danger { background: var(--danger); }
   table { width:100%; border-collapse: collapse; background: var(--card-bg); border-radius:10px; overflow:hidden; box-shadow: var(--shadow); }
   th { background: #f8fafd; padding:12px 8px; text-align:left; font-weight:600; font-size:0.85rem; border-bottom:1px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap; }
@@ -196,7 +196,7 @@
       padding: 6px 8px;
       font-size: 0.9rem;
       outline: none;
-      min-width: 140px;
+      min-width: 80px;
   }
 
   .date-picker-group .date-input:focus {
@@ -228,7 +228,7 @@
       padding: 6px 8px;
       font-size: 0.9rem;
       outline: none;
-      width: 70px;
+      width: 52px;
       text-align: center;
   }
 
@@ -249,7 +249,7 @@
 </head>
 <body>
 <div class="container">
-  <h1>💳 信用卡管家
+  <h1>💳 信用卡管理
     <span style="margin-left:auto; display:flex; gap:10px;">
       <button class="btn btn-sm btn-outline" id="manageBankBtn">🏦 银行及额度管理</button>
       <button class="btn btn-sm btn-outline" id="exportBtn">📥 导出备份</button>
@@ -262,7 +262,7 @@
     <span id="alertToday" class="alert-item alert-red">今日到期 0</span>
     <span id="alert3day" class="alert-item alert-orange">3天内 0</span>
     <span id="alert7day" class="alert-item alert-yellow">7天内 0</span>
-    <span style="margin-left:auto; font-size:0.8rem;">基于推算日期刷新</span>
+    <span style="margin-left:auto; font-size:0.8rem;">基于推算日刷新</span>
   </div>
 
   <div class="toolbar">
@@ -279,15 +279,15 @@
         </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
-      
+        <button class="btn btn-sm  btn-outline" id="prevDay">前一天</button>
+        <button class="btn btn-sm  btn-outline" id="nextDay">后一天</button>
         <div class="date-picker-group">
-          <span class="date-label">推算账单</span>
+
+          <span class="date-label">推算日</span>
           <input type="date" id="simulateDate" class="date-input">
         </div>
 
-        <button class="btn btn-sm " id="prevDay">◀</button>
-        <button class="btn btn-sm " id="nextDay">▶</button>
-        <button class="btn btn-sm " id="resetDate">今天</button>
+        <button class="btn btn-sm  btn-outline" id="resetDate">转到今天</button>
     </div>
       
     </div>
@@ -300,14 +300,14 @@
       </select>
       <div style="display:flex; gap:10px;" id="orgFilters"></div>
       <div style="flex:1;"></div> 
-      <div style="margin-left: auto; display: flex; gap: 10px; align-items:center;">
+      <div style="margin-left: auto; display: flex; gap: 10px; align-items:center; font-size:0.9rem;">
         <div class="billday-group">
             <span class="billday-label">账单日</span>
             <input type="number" id="billDayFrom" class="billday-input" placeholder="从" min="1" max="31">
             <span class="billday-sep">—</span>
             <input type="number" id="billDayTo" class="billday-input" placeholder="到" min="1" max="31">
         </div>
-        <button class="btn btn-sm btn-outline" id="clearFilters">清除筛选</button>
+        <button class="btn btn-sm btn-outline" style="font-size: 0.9rem;" id="clearFilters">清除筛选</button>
     </div>
   </div>
     
@@ -1033,8 +1033,121 @@
     
 
     // 绑定点击事件
-    document.getElementById('prevDay').onclick = () => shiftSimulateDate(-1);
-    document.getElementById('nextDay').onclick = () => shiftSimulateDate(1);
+    // 前一天按钮（单击 + 长按连续）
+    const prevBtn = document.getElementById('prevDay');
+    let longPressTimer = null;
+    let isLongPressing = false;
+
+    function startLongPress(step) {
+        longPressTimer = setInterval(() => {
+            shiftSimulateDate(step);
+        }, 150); // 每150毫秒触发一次，可调整速度
+    }
+    function stopLongPress() {
+        if (longPressTimer) {
+            clearInterval(longPressTimer);
+            longPressTimer = null;
+        }
+        isLongPressing = false;
+    }
+
+    // 单击事件（防止长按时也触发单击，用标志位区分）
+    prevBtn.onmousedown = (e) => {
+        e.preventDefault(); // 避免焦点丢失
+        isLongPressing = false;
+        // 延迟启动长按，避免短按也连续
+        longPressTimer = setTimeout(() => {
+            isLongPressing = true;
+            startLongPress(-1);
+        }, 300); // 300ms后开始连续减
+    };
+    prevBtn.onmouseup = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        if (!isLongPressing) {
+            // 没有触发长按时，执行单击
+            shiftSimulateDate(-1);
+        }
+        stopLongPress();
+    };
+    prevBtn.onmouseleave = () => {
+        // 鼠标离开按钮时停止连续
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        stopLongPress();
+    };
+    // 触摸屏支持（可选）
+    prevBtn.ontouchstart = (e) => {
+        e.preventDefault();
+        isLongPressing = false;
+        longPressTimer = setTimeout(() => {
+            isLongPressing = true;
+            startLongPress(-1);
+        }, 300);
+    };
+    prevBtn.ontouchend = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        if (!isLongPressing) {
+            shiftSimulateDate(-1);
+        }
+        stopLongPress();
+    };
+    prevBtn.ontouchcancel = prevBtn.ontouchend;
+
+    // 后一天按钮（同样逻辑）
+    const nextBtn = document.getElementById('nextDay');
+    nextBtn.onmousedown = (e) => {
+        e.preventDefault();
+        isLongPressing = false;
+        longPressTimer = setTimeout(() => {
+            isLongPressing = true;
+            startLongPress(1);
+        }, 300);
+    };
+    nextBtn.onmouseup = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        if (!isLongPressing) {
+            shiftSimulateDate(1);
+        }
+        stopLongPress();
+    };
+    nextBtn.onmouseleave = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        stopLongPress();
+    };
+    nextBtn.ontouchstart = (e) => {
+        e.preventDefault();
+        isLongPressing = false;
+        longPressTimer = setTimeout(() => {
+            isLongPressing = true;
+            startLongPress(1);
+        }, 300);
+    };
+    nextBtn.ontouchend = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        if (!isLongPressing) {
+            shiftSimulateDate(1);
+        }
+        stopLongPress();
+    };
+    nextBtn.ontouchcancel = nextBtn.ontouchend;
+
     };
 
     // 定义一个刷新函数：同时更新列表视图和日历视图（如果可见）
