@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260608.1010</title>
+<title>信用卡管理 v20260610.1700</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -52,9 +52,24 @@
   .form-group label { display:block; margin-bottom:4px; font-weight:500; font-size:0.9rem; }
   .form-group input, .form-group select, .form-group textarea { width:100%; padding:8px; border:1px solid var(--border); border-radius:6px; }
 
-  .detail-item { margin-bottom: 12px; }
-  .detail-item strong { display: inline-block; width: 80px; color: #555; }
-  .detail-item span { color: #222; }
+  .detail-item {
+      background: #f9f9fb;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+  }
+  .detail-item strong {
+      display: block;
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 4px;
+  }
+  .detail-item span {
+      font-size: 0.9rem;
+      font-weight: 500;
+      word-break: break-word;
+  }
 
   .calendar-container { display: flex; flex-direction: column; gap: 20px; }
   .calendar-box { width: 100%; background: white; border-radius: 12px; padding: 15px; box-shadow: var(--shadow); }
@@ -243,6 +258,66 @@
       user-select: none;
   }
 
+  .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px 20px;
+  }
+
+  /* 银行行：标签、下拉框、按钮排成一行 */
+  .form-group-bank {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+  }
+  .form-group-bank label {
+      margin-bottom: 0;
+      font-weight: 500;
+  }
+
+  .form-group-bank .bank-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+  }
+  .form-group-bank select {
+      flex: 1;
+  }
+  .form-group-bank button {
+      white-space: nowrap;
+  }
+
+  /* 禁用按钮的灰色样式 */
+  .btn:disabled,
+  .btn[disabled] {
+      background: #cccccc !important;
+      color: #666666 !important;
+      cursor: not-allowed !important;
+      opacity: 0.6;
+  }
+
+  /* 如果是 btn-outline 类型的禁用样式（可选） */
+  .btn-outline:disabled,
+  .btn-outline[disabled] {
+      background: #f5f5f5 !important;
+      color: #999999 !important;
+      border-color: #cccccc !important;
+      cursor: not-allowed !important;
+  }
+
+  #orgCheckboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;            /* 行间距12px，列间距20px */
+      min-height: 48px;
+  }
+  #orgCheckboxes label {
+      display: inline-flex;      /* 或 flex，但 inline-flex 更紧凑 */
+      align-items: center;       /* 垂直居中 */
+      gap: 4px;                  /* 复选框与文字间距 */
+      white-space: nowrap;       /* 文字不换行 */
+      cursor: pointer;
+}
   
 
 </style>
@@ -327,7 +402,7 @@
           <th data-sort="cardLimit">额度</th>
           <th data-sort="nextBill">下个账单日</th>
           <th data-sort="nextDue">下个还款日</th>
-          <th>操作</th>
+          <th>卡片管家</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -371,38 +446,66 @@
   </div>
 </div>
 
-<div id="cardModal" class="modal hide">
-  <div class="modal-content">
-    <h3 id="cardModalTitle">添加信用卡</h3>
-    <div class="form-group"><label>银行</label><select id="cardBank"><option value="">选择银行</option></select><button class="btn btn-sm" id="newBankInCard" style="margin-top:5px;">＋ 新建银行</button></div>
-    <div class="form-group"><label>卡组织（可多选）</label><div id="orgCheckboxes" style="display:flex; gap:15px; flex-wrap:wrap;"></div></div>
-    <div class="form-group"><label>卡片等级</label><input id="cardLevel" placeholder="如金卡、白金卡"></div>
-    <div class="form-group"><label>卡号后4位</label><input id="cardLastFour" maxlength="4" placeholder="1234"></div>
-    <div class="form-group"><label>昵称</label><input id="cardNickname" placeholder="例如：海淘卡"></div>
-    <div class="form-group"><label>备注（联名会员号等）</label><textarea id="cardNote" rows="2"></textarea></div>
-    <div class="form-group"><label>卡片额度</label><input type="number" id="cardLimit" placeholder="50000"></div>
-    <div class="form-group">
-      <label>账单日</label>
-      <div style="display:flex; gap:10px; align-items: center;">
-        <input type="number" id="billDay" min="1" max="31" placeholder="10" style="flex:1;">
-        <label class="inline-check"><input type="checkbox" id="billDayEndOfMonth"> 月底</label>
+  <div id="cardModal" class="modal hide">
+    <div class="modal-content" style="width: 800px; max-width: 90vw;">
+      <h3 id="cardModalTitle">添加信用卡</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px;">
+        <!-- 第1列 -->
+        <div>
+          <div class="form-group form-group-bank">
+              <label>银行</label>
+              <div class="bank-row">
+                  <select id="cardBank"><option value="">选择银行</option></select>
+                  <button class="btn btn-sm" id="newBankInCard">＋ 新建银行</button>
+              </div>
+          </div>
+          <div class="form-group">
+            <label>卡组织（可多选）</label>
+            <div id="orgCheckboxes" style="display:flex; gap:10px; flex-wrap:wrap; align-items: left;"></div>
+          </div>
+          <div class="form-group"><label>卡片等级</label><input id="cardLevel" placeholder="如金卡、白金卡"></div>
+          <div class="form-group"><label>卡号后4位</label><input id="cardLastFour" maxlength="4" placeholder="1234"></div>
+          <div class="form-group"><label>卡片额度</label><input type="number" id="cardLimit" placeholder="50000"></div>
+          <div class="form-group"><label>联名会员</label><input id="cardRepaymentDesc" ></div>
+        </div>
+        <!-- 第2列 -->
+        <div>
+          <div class="form-group"><label>昵称</label><input id="cardNickname" ></div>
+          <div class="form-group">
+            <label>账单日</label>
+            <div style="display:flex; gap:10px; align-items: center;">
+              <input type="number" id="billDay" min="1" max="31" placeholder="10" style="flex:1;">
+              <label class="inline-check"><input type="checkbox" id="billDayEndOfMonth"> 月底</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>还款日</label>
+            <select id="repaymentType" style="width:100%;">
+              <option value="fixed">固定还款日</option>
+              <option value="afterBill">账单日后N天</option>
+            </select>
+          </div>
+          <div class="form-group"><label id="repaymentLabel">固定还款日</label><input type="number" id="repaymentValue" min="1" max="31" placeholder="25"></div>
+          <div class="form-group"><label>有效期 (MM/YY)</label><input id="cardExpiry" placeholder="12/28" maxlength="5"></div>
+          <div class="form-group"><label>VCC / CVV</label><input id="cardVcc" placeholder="123" maxlength="4"></div>
+          </div>
       </div>
-    </div>
-    <div class="form-group"><label>还款方式</label><select id="repaymentType"><option value="fixed">固定还款日</option><option value="afterBill">账单日后N天</option></select></div>
-    <div class="form-group"><label id="repaymentLabel">固定还款日</label><input type="number" id="repaymentValue" min="1" max="31" placeholder="25"></div>
-    <input type="hidden" id="editCardId">
-    <div style="display:flex; justify-content:flex-end; gap:10px;">
-      <button class="btn btn-outline" id="cancelCardBtn">取消</button>
-      <button class="btn" id="saveCardBtn">保存</button>
+      <div class="form-group"><label>备注（还款方式等）</label><textarea id="cardNote" rows="3"></textarea></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+          <button class="btn btn-outline" id="cancelCardBtn">取消</button>
+          <button class="btn btn-outline" id="editCardBtn" style="display:none;">编辑</button>
+          <button class="btn" id="saveCardBtn">保存</button>
+          <button class="btn btn-outline" id="detailCloseBtn" style="display:none;">关闭</button>
+      </div>
+      <input type="hidden" id="editCardId">
     </div>
   </div>
-</div>
 
 <div id="detailModal" class="modal hide">
-  <div class="modal-content">
+  <div class="modal-content" style="width: 800px; max-width: 90vw;">
     <h3>📋 卡片详情</h3>
-    <div id="detailContent"></div>
-    <button class="btn btn-outline" style="margin-top:15px;" id="closeDetailBtn">关闭</button>
+    <div id="detailContent" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px;"></div>
+    <button class="btn btn-outline" style="margin-top:20px;" id="closeDetailBtn">关闭</button>
   </div>
 </div>
 
@@ -727,7 +830,6 @@
         <td>${nextDue.getMonth()+1}/${nextDue.getDate()}</td>
         <td class="action-links">
           <span class="action-link viewDetailBtn" data-id="${card.id}">详情</span>
-          <span class="action-link editCardBtn" data-id="${card.id}">编辑</span>
           <span class="action-link danger delCardBtn" data-id="${card.id}">删除</span>
         </td>
       `;
@@ -876,29 +978,69 @@
     });
   }
 
-  function showDetailModal(cardId) {
-    const card = cards.find(c => c.id === cardId);
-    if (!card) return;
-    const bank = banks.find(b => b.id === card.bankId);
-    const content = document.getElementById('detailContent');
-    const refDate = simulateDateInput.valueAsDate || new Date();
-    const nextBill = getNextBillDate(card, refDate);
-    const nextDue = getNextDueDate(card, refDate);
-    content.innerHTML = `
-      <div class="detail-item"><strong>银行</strong><span>${bank?.name || '未知'}</span></div>
-      <div class="detail-item"><strong>卡组织</strong><span>${card.organizations.join(', ') || '-'}</span></div>
-      <div class="detail-item"><strong>等级</strong><span>${card.level || '-'}</span></div>
-      <div class="detail-item"><strong>尾号</strong><span>${card.lastFour}</span></div>
-      <div class="detail-item"><strong>昵称</strong><span>${card.nickname || '-'}</span></div>
-      <div class="detail-item"><strong>备注</strong><span>${card.note || '-'}</span></div>
-      <div class="detail-item"><strong>额度</strong><span>¥${card.cardLimit.toLocaleString()}</span></div>
-      <div class="detail-item"><strong>账单日</strong><span>${card.billDay === 0 ? '月底' : card.billDay+'日'}</span></div>
-      <div class="detail-item"><strong>还款方式</strong><span>${card.repaymentType === 'fixed' ? `固定${card.repaymentValue}日` : `账单后${card.repaymentValue}天`}</span></div>
-      <div class="detail-item"><strong>下个账单</strong><span>${nextBill.getMonth()+1}/${nextBill.getDate()}</span></div>
-      <div class="detail-item"><strong>下个还款</strong><span>${nextDue.getMonth()+1}/${nextDue.getDate()}</span></div>
-    `;
-    document.getElementById('detailModal').classList.remove('hide');
+    function showDetailModal(cardId) {
+      openCardModal(cardId, true);
   }
+
+  // function showDetailModal(cardId) {
+  //     const card = cards.find(c => c.id === cardId);
+  //     if (!card) return;
+  //     const bank = banks.find(b => b.id === card.bankId);
+  //     const refDate = simulateDateInput.valueAsDate || new Date();
+  //     const nextBill = getNextBillDate(card, refDate);
+  //     const nextDue = getNextDueDate(card, refDate);
+
+  //     // 定义字段数组（顺序与编辑页完全一致）
+  //     // 左列字段
+  //     const leftFields = [
+  //         { label: '银行', value: bank?.name || '未知' },
+  //         { label: '卡组织', value: card.organizations?.join(', ') || '-' },
+  //         { label: '卡片等级', value: card.level || '-' },
+  //         { label: '卡号后4位', value: card.lastFour },
+  //         { label: '昵称', value: card.nickname || '-' },
+  //         { label: '有效期', value: card.expiry || '未设置' }
+  //     ];
+  //     // 右列字段
+  //     const rightFields = [
+  //         { label: '卡片额度', value: `¥${card.cardLimit.toLocaleString()}` },
+  //         { label: '账单日', value: card.billDay === 0 ? '月底' : card.billDay + '日' },
+  //         { label: '还款方式', value: card.repaymentType === 'fixed' ? `固定${card.repaymentValue}日` : `账单后${card.repaymentValue}天` },
+  //         { label: '还款方式说明', value: card.repaymentDesc || '未设置' },
+  //         { label: 'VCC / CVV', value: card.vcc || '未设置' },
+  //         { label: '下个账单日', value: `${nextBill.getMonth()+1}/${nextBill.getDate()}` },
+  //         { label: '下个还款日', value: `${nextDue.getMonth()+1}/${nextDue.getDate()}` }
+  //     ];
+  //     // 备注字段（单独一行，跨两列）
+  //     const noteValue = card.note || '-';
+
+  //     const container = document.getElementById('detailContent');
+  //     container.innerHTML = `
+  //         <div>
+  //             ${leftFields.map(f => `
+  //                 <div class="detail-item">
+  //                     <strong>${f.label}</strong><br>
+  //                     <span>${f.value}</span>
+  //                 </div>
+  //             `).join('')}
+  //         </div>
+  //         <div>
+  //             ${rightFields.map(f => `
+  //                 <div class="detail-item">
+  //                     <strong>${f.label}</strong><br>
+  //                     <span>${f.value}</span>
+  //                 </div>
+  //             `).join('')}
+  //         </div>
+  //         <div style="grid-column: 1 / -1;">
+  //             <div class="detail-item">
+  //                 <strong>备注（联名会员号等）</strong><br>
+  //                 <span>${noteValue}</span>
+  //             </div>
+  //         </div>
+  //     `;
+
+  //     document.getElementById('detailModal').classList.remove('hide');
+  // }
 
   function exportData() {
     const data = { banks, cards };
@@ -959,6 +1101,43 @@
       document.getElementById('calendarFilterBtns').style.display = 'flex';
       renderCalendar();
     };
+
+    document.getElementById('detailCloseBtn').onclick = () => {
+        const modal = document.getElementById('cardModal');
+        modal.classList.add('hide');
+        // 恢复所有输入框可用（以便下次打开添加/编辑）
+        const inputs = modal.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => input.disabled = false);
+    };
+
+    const editBtn = document.getElementById('editCardBtn');
+    if (editBtn) {
+        editBtn.onclick = () => {
+            // 切换到编辑模式：启用所有输入框，调整按钮
+            const modal = document.getElementById('cardModal');
+            const allInputs = modal.querySelectorAll('input, select, textarea');
+            allInputs.forEach(input => input.disabled = false);
+            const newBankBtn = document.getElementById('newBankInCard');
+            if (newBankBtn) newBankBtn.disabled = false;
+
+            // 切换按钮显示
+            const saveBtn = document.getElementById('saveCardBtn');
+            const cancelBtn = document.getElementById('cancelCardBtn');
+            const editBtnElem = document.getElementById('editCardBtn');
+            const closeBtn = document.getElementById('detailCloseBtn');
+            
+            saveBtn.style.display = 'inline-block';
+            cancelBtn.style.display = 'inline-block';
+            editBtnElem.style.display = 'none';
+            closeBtn.style.display = 'none';
+
+            // 更新标题
+            document.getElementById('cardModalTitle').innerText = '编辑信用卡';
+            
+            // 重要：标记当前处于编辑模式（用于取消时恢复）
+            window._isFromDetail = true;  // 保留来源标记，取消时恢复只读
+        };
+    }
 
     simulateDateInput.valueAsDate = new Date();
     simulateDateInput.onchange = () => {
@@ -1223,8 +1402,55 @@
       }
     });
 
-    document.getElementById('addCardBtn').onclick = () => openCardModal();
-    document.getElementById('cancelCardBtn').onclick = () => document.getElementById('cardModal').classList.add('hide');
+    const addBtn = document.getElementById('addCardBtn');
+    if (addBtn) {
+        addBtn.onclick = () => openCardModal();
+    }
+
+    const cancelBtn = document.getElementById('cancelCardBtn');
+    if (cancelBtn) {
+        cancelBtn.onclick = () => {
+            // 如果是从详情进入且当前处于可编辑状态（即已点击过编辑），则恢复只读模式
+            if (window._isFromDetail) {
+                // 恢复到只读模式：禁用所有输入框，切换按钮
+                const modal = document.getElementById('cardModal');
+                const allInputs = modal.querySelectorAll('input, select, textarea');
+                allInputs.forEach(input => input.disabled = true);
+                
+                const saveBtn = document.getElementById('saveCardBtn');
+                const cancelBtnElem = document.getElementById('cancelCardBtn');
+                const editBtnElem = document.getElementById('editCardBtn');
+                const closeBtn = document.getElementById('detailCloseBtn');
+                
+                const newBankBtn = document.getElementById('newBankInCard');
+                if (newBankBtn) newBankBtn.disabled = true;
+
+                saveBtn.style.display = 'none';
+                cancelBtnElem.style.display = 'none';
+                editBtnElem.style.display = 'inline-block';
+                closeBtn.style.display = 'inline-block';
+                
+                // 恢复标题为“卡片详情”
+                document.getElementById('cardModalTitle').innerText = '卡片详情';
+                
+                // 重新加载原始卡片数据（防止编辑过程中修改了表单值但未保存）
+                if (editingCardId) {
+                    const targetCard = cards.find(c => c.id === editingCardId);
+                    if (targetCard) {
+                        // 重新填充数据（略，可调用一个 reload 函数，但为了简洁，直接重新打开只读模式）
+                        // 简单起见，关闭后重新打开只读模式
+                        const modalElem = document.getElementById('cardModal');
+                        modalElem.classList.add('hide');
+                        openCardModal(editingCardId, true);
+                    }
+                }
+            } else {
+                // 否则（添加卡片或直接编辑模式），关闭模态框
+                document.getElementById('cardModal').classList.add('hide');
+            }
+        };
+    }
+
     document.getElementById('saveCardBtn').onclick = saveCard;
     document.getElementById('repaymentType').onchange = function() {
       document.getElementById('repaymentLabel').innerText = this.value === 'fixed' ? '固定还款日' : '账单后天数';
@@ -1256,18 +1482,18 @@
     });
 
     cardTableBody.addEventListener('click', (e) => {
-      const target = e.target;
-      const id = target.dataset.id;
-      if (target.classList.contains('viewDetailBtn')) {
-        showDetailModal(id);
-      } else if (target.classList.contains('editCardBtn')) {
-        openCardModal(id);
-      } else if (target.classList.contains('delCardBtn')) {
-        if (confirm('确定删除此卡片？')) {
-          cards = cards.filter(c => c.id !== id);
-          saveData(); renderAll();
+        const target = e.target.closest('.action-link');
+        if (!target) return;
+        const id = target.dataset.id;
+        if (target.classList.contains('viewDetailBtn')) {
+            showDetailModal(id);
+        }  else if (target.classList.contains('delCardBtn')) {
+            if (confirm('确定删除此卡片？')) {
+                cards = cards.filter(c => c.id !== id);
+                saveData();
+                renderAll();
+            }
         }
-      }
     });
 
     document.getElementById('closeDetailBtn').onclick = () => document.getElementById('detailModal').classList.add('hide');
@@ -1291,55 +1517,103 @@
     });
   
 
-  function openCardModal(id = null) {
-    editingCardId = id;
-    const modal = document.getElementById('cardModal');
-    document.getElementById('cardModalTitle').innerText = id ? '编辑信用卡' : '添加信用卡';
-    document.getElementById('cardBank').value = '';
-    document.getElementById('cardLevel').value = '';
-    document.getElementById('cardLastFour').value = '';
-    document.getElementById('cardNickname').value = '';
-    document.getElementById('cardNote').value = '';
-    document.getElementById('cardLimit').value = '';
-    document.getElementById('repaymentType').value = 'fixed';
-    document.getElementById('repaymentValue').value = '';
-    document.querySelectorAll('#orgCheckboxes input').forEach(cb => cb.checked = false);
+    function openCardModal(id = null, readOnly = false) {
+        editingCardId = id;
+        const modal = document.getElementById('cardModal');
+        if (!modal) return;
 
-    const billDayInput = document.getElementById('billDay');
-    const billDayEndOfMonthCheck = document.getElementById('billDayEndOfMonth');
-    billDayEndOfMonthCheck.checked = false;
-    billDayInput.disabled = false;
-    billDayInput.value = '';
-    billDayInput.placeholder = '10';
+        // 记录本次打开是否来自详情（只读模式）
+        window._isFromDetail = readOnly;
 
-    if (id) {
-      const card = cards.find(c => c.id === id);
-      if (card) {
-        document.getElementById('cardBank').value = card.bankId;
-        document.getElementById('cardLevel').value = card.level || '';
-        document.getElementById('cardLastFour').value = card.lastFour;
-        document.getElementById('cardNickname').value = card.nickname || '';
-        document.getElementById('cardNote').value = card.note || '';
-        document.getElementById('cardLimit').value = card.cardLimit;
-        if (card.billDay === 0) {
-          billDayEndOfMonthCheck.checked = true;
-          billDayInput.disabled = true;
-          billDayInput.value = '';
-          billDayInput.placeholder = '月底';
-        } else {
-          document.getElementById('billDay').value = card.billDay;
+        // 获取所有表单控件
+        const allInputs = modal.querySelectorAll('input, select, textarea');
+        
+        // 重置表单（清空）
+        document.getElementById('cardModalTitle').innerText = readOnly ? '卡片详情' : (id ? '编辑信用卡' : '添加信用卡');
+        document.getElementById('cardBank').value = '';
+        document.getElementById('cardLevel').value = '';
+        document.getElementById('cardLastFour').value = '';
+        document.getElementById('cardNickname').value = '';
+        document.getElementById('cardNote').value = '';
+        document.getElementById('cardLimit').value = '';
+        document.getElementById('repaymentType').value = 'fixed';
+        document.getElementById('repaymentValue').value = '';
+        document.querySelectorAll('#orgCheckboxes input').forEach(cb => cb.checked = false);
+        document.getElementById('cardExpiry').value = '';
+        document.getElementById('cardVcc').value = '';
+        document.getElementById('cardRepaymentDesc').value = '';
+        document.getElementById('cardExpiry').value = '';
+        document.getElementById('cardVcc').value = '';
+
+        const billDayInput = document.getElementById('billDay');
+        const billDayEndOfMonthCheck = document.getElementById('billDayEndOfMonth');
+        billDayEndOfMonthCheck.checked = false;
+        billDayInput.disabled = false;
+        billDayInput.value = '';
+        billDayInput.placeholder = '10';
+
+        // 如果有 id，填充数据
+        if (id) {
+            const targetCard = cards.find(c => c.id === id);
+            if (targetCard) {
+                document.getElementById('cardBank').value = targetCard.bankId;
+                document.getElementById('cardLevel').value = targetCard.level || '';
+                document.getElementById('cardLastFour').value = targetCard.lastFour;
+                document.getElementById('cardNickname').value = targetCard.nickname || '';
+                document.getElementById('cardNote').value = targetCard.note || '';
+                document.getElementById('cardLimit').value = targetCard.cardLimit;
+                document.getElementById('cardExpiry').value = targetCard.expiry || '';
+                document.getElementById('cardVcc').value = targetCard.vcc || '';
+                document.getElementById('cardRepaymentDesc').value = targetCard.repaymentDesc || '';
+                document.getElementById('cardExpiry').value = targetCard.expiry || '';
+                document.getElementById('cardVcc').value = targetCard.vcc || '';
+
+                if (targetCard.billDay === 0) {
+                    billDayEndOfMonthCheck.checked = true;
+                    billDayInput.disabled = true;
+                    billDayInput.value = '';
+                    billDayInput.placeholder = '月底';
+                } else {
+                    document.getElementById('billDay').value = targetCard.billDay;
+                }
+                document.getElementById('repaymentType').value = targetCard.repaymentType;
+                document.getElementById('repaymentValue').value = targetCard.repaymentValue;
+                document.getElementById('repaymentLabel').innerText = targetCard.repaymentType === 'fixed' ? '固定还款日' : '账单后天数';
+                targetCard.organizations.forEach(org => {
+                    const cb = document.querySelector(`#orgCheckboxes input[value="${org}"]`);
+                    if (cb) cb.checked = true;
+                });
+            }
         }
-        document.getElementById('repaymentType').value = card.repaymentType;
-        document.getElementById('repaymentValue').value = card.repaymentValue;
-        document.getElementById('repaymentLabel').innerText = card.repaymentType === 'fixed' ? '固定还款日' : '账单后天数';
-        card.organizations.forEach(org => {
-          const cb = document.querySelector(`#orgCheckboxes input[value="${org}"]`);
-          if (cb) cb.checked = true;
-        });
-      }
+
+        // 根据只读模式切换界面
+        const saveBtn = document.getElementById('saveCardBtn');
+        const cancelBtn = document.getElementById('cancelCardBtn');
+        const editBtn = document.getElementById('editCardBtn');
+        const closeBtn = document.getElementById('detailCloseBtn');
+        const newBankBtn = document.getElementById('newBankInCard');
+
+        if (readOnly) {
+            // 详情模式：禁用所有输入框，只显示“编辑”和“关闭”
+            allInputs.forEach(input => input.disabled = true);
+            saveBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+            editBtn.style.display = 'inline-block';
+            closeBtn.style.display = 'inline-block';
+            newBankBtn.disabled = true;
+        } else {
+            // 编辑/添加模式：启用所有输入框，显示“保存”和“取消”
+            allInputs.forEach(input => input.disabled = false);
+            saveBtn.style.display = 'inline-block';
+            cancelBtn.style.display = 'inline-block';
+            editBtn.style.display = 'none';
+            closeBtn.style.display = 'none';
+            newBankBtn.disabled = false;
+        }
+
+        modal.classList.remove('hide');
     }
-    modal.classList.remove('hide');
-  }
+
 
     function saveCard() {
       const bankId = document.getElementById('cardBank').value;
@@ -1353,6 +1627,9 @@
       if (!lastFour) return alert('请输入卡号后四位');
       const nickname = document.getElementById('cardNickname').value;
       const note = document.getElementById('cardNote').value;
+      const expiry = document.getElementById('cardExpiry').value;
+      const vcc = document.getElementById('cardVcc').value;
+      const repaymentDesc = document.getElementById('cardRepaymentDesc').value;
       const cardLimit = parseFloat(document.getElementById('cardLimit').value) || 0;
       const repaymentType = document.getElementById('repaymentType').value;
       const repaymentValue = parseInt(document.getElementById('repaymentValue').value) || 1;
@@ -1368,7 +1645,8 @@
 
       const cardData = {
           bankId, organizations: orgs, level, lastFour, nickname, note,
-          cardLimit, billDay, repaymentType, repaymentValue
+          cardLimit, billDay, repaymentType, repaymentValue,
+          repaymentDesc, expiry, vcc   // 新增三个字段
       };
 
       if (editingCardId) {
