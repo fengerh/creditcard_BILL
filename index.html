@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260610.1700</title>
+<title>信用卡管理 v20260611.1610</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -432,7 +432,9 @@
 
 <div id="bankModal" class="modal hide">
   <div class="modal-content">
-    <h3>🏦 银行及额度管理 <span id="totalBankLimit" style="font-size:0.9rem; font-weight:normal; color:#555;"></span></h3>
+    <h3 style="display: flex; justify-content: space-between; align-items: center;">🏦 银行及额度管理 <span id="totalBankLimit" style="font-size:0.9rem; font-weight:normal; color:#555;"></span>
+    <button class="btn btn-sm" id="addBankBtn" >添加银行</button>
+    </h3>
     <div class="table-wrap" style="margin:15px 0;">
       <table style="width:100%;">
         <thead><tr><th>银行列表</th><th>总额度</th><th>颜色</th><th>操作</th></tr></thead>
@@ -440,8 +442,8 @@
       </table>
     </div>
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <button class="btn btn-sm" id="addBankBtn">添加银行</button>
-      <button class="btn btn-sm btn-outline" id="closeBankModal">关闭</button>
+      
+      <button class="btn btn-sm btn-outline" id="closeBankModal" style="margin-left: auto;">关闭</button>
     </div>
   </div>
 </div>
@@ -818,7 +820,7 @@
       const row = document.createElement('tr');
       row.className = urgencyClass;
       row.innerHTML = `
-        <td>${bank?.name || '未知'}</td>
+        <td><span style="color: ${bank?.color || '#000'}; font-weight: 500;">${bank?.name || '未知'}</span></td>
         <td>${card.organizations.map(o => `<span class="badge">${o}</span>`).join('')}</td>
         <td>${card.level || '-'}</td>
         <td>${card.lastFour}</td>
