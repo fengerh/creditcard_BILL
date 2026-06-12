@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>信用卡管理 v20260611.1610</title>
+<title>信用卡管理 v20260612.1400</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -48,9 +48,16 @@
 
   .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:100; }
   .modal-content { background:white; border-radius:12px; padding:24px; width:500px; max-height:80vh; overflow-y:auto; box-shadow:0 8px 30px rgba(0,0,0,0.2); }
-  .form-group { margin-bottom:15px; }
-  .form-group label { display:block; margin-bottom:4px; font-weight:500; font-size:0.9rem; }
+  .form-group { margin-bottom:5px; }
+  .form-group label { display:block; margin-bottom:0px; font-weight:500; font-size:0.9rem; }
   .form-group input, .form-group select, .form-group textarea { width:100%; padding:8px; border:1px solid var(--border); border-radius:6px; }
+
+  #cardModal .form-group {
+    margin-bottom: 10px;
+  }
+  #cardModal .form-group:last-of-type {
+    margin-bottom: 0;
+  }
 
   .detail-item {
       background: #f9f9fb;
@@ -268,7 +275,7 @@
   .form-group-bank {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 0px;
   }
   .form-group-bank label {
       margin-bottom: 0;
@@ -307,9 +314,9 @@
 
   #orgCheckboxes {
       display: flex;
-      flex-wrap: wrap;
+      
       gap: 12px 20px;            /* 行间距12px，列间距20px */
-      min-height: 48px;
+      min-height: 10px;
   }
   #orgCheckboxes label {
       display: inline-flex;      /* 或 flex，但 inline-flex 更紧凑 */
@@ -317,7 +324,10 @@
       gap: 4px;                  /* 复选框与文字间距 */
       white-space: nowrap;       /* 文字不换行 */
       cursor: pointer;
-}
+      margin-bottom: 6px;                 
+      margin-top: 6px;                 /* 每个标签上下间距8px */
+    }
+  
   
 
 </style>
@@ -371,7 +381,11 @@
   <div class="toolbar" id="filterBar">
     <div class="filters" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
       <select id="filterBank" multiple size="1" style="width:160px;" title="银行（可多选）">
-        <option value="">全部银行</option>
+        <option value="">选择银行（共<span id="totalCardCount">0</span>张）</option>
+      </select>
+      <!-- 新增等级筛选 -->
+      <select id="filterLevel" multiple size="1" style="width:100px;" title="等级（可多选）">
+        <option value="" selected>选择等级</option>
       </select>
       <div style="display:flex; gap:10px;" id="orgFilters"></div>
       <div style="flex:1;"></div> 
@@ -449,51 +463,60 @@
 </div>
 
   <div id="cardModal" class="modal hide">
-    <div class="modal-content" style="width: 800px; max-width: 90vw;">
+    <div class="modal-content" style="width: 660px; max-width: 80vw;height: 480px; max-height: 70vh; overflow-y: auto; box-shadow:0 8px 30px rgba(0,0,0,0.2);">
       <h3 id="cardModalTitle">添加信用卡</h3>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px;">
-        <!-- 第1列 -->
-        <div>
-          <div class="form-group form-group-bank">
-              <label>银行</label>
-              <div class="bank-row">
-                  <select id="cardBank"><option value="">选择银行</option></select>
-                  <button class="btn btn-sm" id="newBankInCard">＋ 新建银行</button>
-              </div>
+      <div style="display: grid; grid-template-columns: repeat(3, auto); gap: 16px 20px;"><div style="display: grid; grid-template-columns: 320px 120px 120px; gap: 10px 15px; align-items: center;margin: 0 auto; width: fit-content;">
+      <!-- 第1列 -->
+      <div>
+        <div class="form-group form-group-bank">
+          <label>银行</label>
+          <div class="bank-row">
+            <select id="cardBank"><option value="">选择银行</option></select>
+            <button class="btn btn-sm" id="newBankInCard">＋ 新建银行</button>
           </div>
-          <div class="form-group">
-            <label>卡组织（可多选）</label>
-            <div id="orgCheckboxes" style="display:flex; gap:10px; flex-wrap:wrap; align-items: left;"></div>
-          </div>
-          <div class="form-group"><label>卡片等级</label><input id="cardLevel" placeholder="如金卡、白金卡"></div>
-          <div class="form-group"><label>卡号后4位</label><input id="cardLastFour" maxlength="4" placeholder="1234"></div>
-          <div class="form-group"><label>卡片额度</label><input type="number" id="cardLimit" placeholder="50000"></div>
-          <div class="form-group"><label>联名会员</label><input id="cardRepaymentDesc" ></div>
         </div>
-        <!-- 第2列 -->
-        <div>
-          <div class="form-group"><label>昵称</label><input id="cardNickname" ></div>
-          <div class="form-group">
-            <label>账单日</label>
-            <div style="display:flex; gap:10px; align-items: center;">
-              <input type="number" id="billDay" min="1" max="31" placeholder="10" style="flex:1;">
-              <label class="inline-check"><input type="checkbox" id="billDayEndOfMonth"> 月底</label>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>还款日</label>
-            <select id="repaymentType" style="width:100%;">
-              <option value="fixed">固定还款日</option>
-              <option value="afterBill">账单日后N天</option>
-            </select>
-          </div>
-          <div class="form-group"><label id="repaymentLabel">固定还款日</label><input type="number" id="repaymentValue" min="1" max="31" placeholder="25"></div>
-          <div class="form-group"><label>有效期 (MM/YY)</label><input id="cardExpiry" placeholder="12/28" maxlength="5"></div>
-          <div class="form-group"><label>VCC / CVV</label><input id="cardVcc" placeholder="123" maxlength="4"></div>
-          </div>
+        <div class="form-group">
+          <label>卡组织（可多选）</label>
+          <div id="orgCheckboxes" style="display:flex; gap:10px; flex-wrap:wrap; align-items: left;"></div>
+        </div>
+        <div class="form-group"><label>联名会员</label><input id="cardRepaymentDesc" placeholder="如国航会员"></div>
+        <div class="form-group"><label>卡片额度</label><input type="number" id="cardLimit" placeholder="50000"></div>
       </div>
-      <div class="form-group"><label>备注（还款方式等）</label><textarea id="cardNote" rows="3"></textarea></div>
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+
+      <!-- 第2列 -->
+      <div>
+        <div class="form-group"><label>卡片等级</label><input id="cardLevel" placeholder="如金卡、白金卡"></div>
+        <div class="form-group"><label>卡号后4位</label><input id="cardLastFour" maxlength="4" placeholder="1234"></div>
+        <div class="form-group"><label>有效期 (MM/YY)</label><input id="cardExpiry" placeholder="12/28" maxlength="5"></div>
+        <div class="form-group"><label>VCC / CVV</label><input id="cardVcc" placeholder="123" maxlength="4"></div>
+      </div>
+
+      <!-- 第3列 -->
+      <div>
+        <div class="form-group">
+          <div class="form-group"><label>昵称</label><input id="cardNickname" placeholder="我的卡"></div>
+          <label>账单日</label>
+          <div style="display:flex; gap:0; align-items:center;white-space: nowrap">
+            <input type="number" id="billDay" min="1" max="31" placeholder="10" style="flex:1; margin-right: 5px;">
+            <label class="inline-check" style="display: flex; align-items: center; gap: 5px; margin-left: 0;"><input type="checkbox"  id="billDayEndOfMonth">月底</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>还款日</label>
+          <select id="repaymentType" style="width:100%;">
+            <option value="fixed">固定还款日</option>
+            <option value="afterBill">账单日后N天</option>
+          </select>
+        </div>
+        <div class="form-group"><label id="repaymentLabel">固定还款日</label><input type="number" id="repaymentValue" min="1" max="31" placeholder="25"></div>
+        </div>
+    </div>
+
+    <!-- 备注单独占一行，跨三列 -->
+    <div class="form-group" style="grid-column: 1 / -1; margin-top: 0; margin-bottom: 0px;">
+      <label>备注（还款方式等）</label><textarea id="cardNote" rows="3" style="width:590px; max-width: auto;"></textarea>
+    </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 0px;">
           <button class="btn btn-outline" id="cancelCardBtn">取消</button>
           <button class="btn btn-outline" id="editCardBtn" style="display:none;">编辑</button>
           <button class="btn" id="saveCardBtn">保存</button>
@@ -729,6 +752,7 @@
 
   function renderAll() {
     renderBankSelects();
+     renderLevelFilter();   // 新增
     renderOrgFilters();
     renderCardTable();
     renderCalendar();
@@ -737,17 +761,48 @@
 
   function renderBankSelects() {
     const filterBank = document.getElementById('filterBank');
-    filterBank.innerHTML = `<option value="">全部银行 (共${cards.length}张)</option>`;
+    // 记住当前已选中的银行 ID（排除空值）
+    const selectedBankIds = Array.from(filterBank.selectedOptions)
+      .map(o => o.value)
+      .filter(v => v && v !== '');
+    
+    // 重新构建下拉框
+    const totalCards = cards.length;
+    filterBank.innerHTML = `<option value="" id="bankPlaceholderOption">选择银行（共${totalCards}张）</option>`;
+    
     banks.forEach(b => {
       const count = cards.filter(c => c.bankId === b.id).length;
-      filterBank.innerHTML += `<option value="${b.id}">${b.name} (${count}张)</option>`;
+      const option = document.createElement('option');
+      option.value = b.id;
+      option.text = `${b.name} (${count}张)`;
+      if (selectedBankIds.includes(b.id)) option.selected = true;
+      filterBank.appendChild(option);
     });
+
+    // 更新卡片表单中的银行下拉框
     const cardBank = document.getElementById('cardBank');
     if (cardBank) {
       cardBank.innerHTML = '<option value="">选择银行</option>';
       banks.forEach(b => cardBank.innerHTML += `<option value="${b.id}">${b.name}</option>`);
     }
     renderBankModal();
+  }
+
+  function renderLevelFilter() {
+    const levelSelect = document.getElementById('filterLevel');
+    if (!levelSelect) return;
+    const currentLevel = levelSelect.value;
+    // 收集所有等级
+    const levelSet = new Set();
+    cards.forEach(c => {
+      if (c.level && c.level.trim() !== '') levelSet.add(c.level);
+    });
+    const levels = [...levelSet].sort();
+    levelSelect.innerHTML = '<option value="">选择等级</option>';
+    levels.forEach(level => {
+      const selectedAttr = currentLevel === level ? 'selected' : '';
+      levelSelect.innerHTML += `<option value="${level}" ${selectedAttr}>${level}</option>`;
+    });
   }
 
   function renderOrgFilters() {
@@ -763,12 +818,22 @@
   }
 
   function getFilteredCards() {
-    const bankVal = Array.from(document.getElementById('filterBank').selectedOptions).map(o => o.value).filter(v => v);
+    // 银行筛选：排除空值
+    const bankVal = Array.from(document.getElementById('filterBank').selectedOptions)
+      .map(o => o.value)
+      .filter(v => v && v !== '');
+    // 等级筛选：排除空值和占位符
+    const levelVal = Array.from(document.getElementById('filterLevel').selectedOptions)
+      .map(o => o.value)
+      .filter(v => v && v !== '' && v !== '等级');
+    
     const orgChecks = Array.from(document.querySelectorAll('.orgFilterCheck:checked')).map(cb => cb.value);
     const billFrom = parseInt(document.getElementById('billDayFrom').value) || 1;
     const billTo = parseInt(document.getElementById('billDayTo').value) || 31;
+    
     return cards.filter(c => {
       if (bankVal.length && !bankVal.includes(c.bankId)) return false;
+      if (levelVal.length && (!c.level || !levelVal.includes(c.level))) return false;
       if (orgChecks.length && !orgChecks.some(org => c.organizations.includes(org))) return false;
       const billDay = c.billDay === 0 ? 31 : c.billDay;
       if (billDay < billFrom || billDay > billTo) return false;
@@ -819,6 +884,13 @@
       const urgencyClass = getUrgencyClass(upcomingDue);
       const row = document.createElement('tr');
       row.className = urgencyClass;
+
+      // 根据 urgencyClass 确定还款日文字颜色
+      let dueColorStyle = '';
+      if (urgencyClass === 'urgent-red') dueColorStyle = 'style="color: #c0392b; font-weight: 500;"';
+      else if (urgencyClass === 'urgent-orange') dueColorStyle = 'style="color: #e67e22; font-weight: 500;"';
+      else if (urgencyClass === 'urgent-yellow') dueColorStyle = 'style="color: #b8860b; font-weight: 500;"';
+
       row.innerHTML = `
         <td><span style="color: ${bank?.color || '#000'}; font-weight: 500;">${bank?.name || '未知'}</span></td>
         <td>${card.organizations.map(o => `<span class="badge">${o}</span>`).join('')}</td>
@@ -829,7 +901,7 @@
         <td>${card.repaymentType === 'fixed' ? `固定${card.repaymentValue}日` : `账单后${card.repaymentValue}天`}</td>
         <td>¥${card.cardLimit.toLocaleString()}</td>
         <td>${nextBill.getMonth()+1}/${nextBill.getDate()}</td>
-        <td>${nextDue.getMonth()+1}/${nextDue.getDate()}</td>
+        <td ${dueColorStyle}>${nextDue.getMonth()+1}/${nextDue.getDate()}</td>
         <td class="action-links">
           <span class="action-link viewDetailBtn" data-id="${card.id}">详情</span>
           <span class="action-link danger delCardBtn" data-id="${card.id}">删除</span>
@@ -984,66 +1056,7 @@
       openCardModal(cardId, true);
   }
 
-  // function showDetailModal(cardId) {
-  //     const card = cards.find(c => c.id === cardId);
-  //     if (!card) return;
-  //     const bank = banks.find(b => b.id === card.bankId);
-  //     const refDate = simulateDateInput.valueAsDate || new Date();
-  //     const nextBill = getNextBillDate(card, refDate);
-  //     const nextDue = getNextDueDate(card, refDate);
-
-  //     // 定义字段数组（顺序与编辑页完全一致）
-  //     // 左列字段
-  //     const leftFields = [
-  //         { label: '银行', value: bank?.name || '未知' },
-  //         { label: '卡组织', value: card.organizations?.join(', ') || '-' },
-  //         { label: '卡片等级', value: card.level || '-' },
-  //         { label: '卡号后4位', value: card.lastFour },
-  //         { label: '昵称', value: card.nickname || '-' },
-  //         { label: '有效期', value: card.expiry || '未设置' }
-  //     ];
-  //     // 右列字段
-  //     const rightFields = [
-  //         { label: '卡片额度', value: `¥${card.cardLimit.toLocaleString()}` },
-  //         { label: '账单日', value: card.billDay === 0 ? '月底' : card.billDay + '日' },
-  //         { label: '还款方式', value: card.repaymentType === 'fixed' ? `固定${card.repaymentValue}日` : `账单后${card.repaymentValue}天` },
-  //         { label: '还款方式说明', value: card.repaymentDesc || '未设置' },
-  //         { label: 'VCC / CVV', value: card.vcc || '未设置' },
-  //         { label: '下个账单日', value: `${nextBill.getMonth()+1}/${nextBill.getDate()}` },
-  //         { label: '下个还款日', value: `${nextDue.getMonth()+1}/${nextDue.getDate()}` }
-  //     ];
-  //     // 备注字段（单独一行，跨两列）
-  //     const noteValue = card.note || '-';
-
-  //     const container = document.getElementById('detailContent');
-  //     container.innerHTML = `
-  //         <div>
-  //             ${leftFields.map(f => `
-  //                 <div class="detail-item">
-  //                     <strong>${f.label}</strong><br>
-  //                     <span>${f.value}</span>
-  //                 </div>
-  //             `).join('')}
-  //         </div>
-  //         <div>
-  //             ${rightFields.map(f => `
-  //                 <div class="detail-item">
-  //                     <strong>${f.label}</strong><br>
-  //                     <span>${f.value}</span>
-  //                 </div>
-  //             `).join('')}
-  //         </div>
-  //         <div style="grid-column: 1 / -1;">
-  //             <div class="detail-item">
-  //                 <strong>备注（联名会员号等）</strong><br>
-  //                 <span>${noteValue}</span>
-  //             </div>
-  //         </div>
-  //     `;
-
-  //     document.getElementById('detailModal').classList.remove('hide');
-  // }
-
+  
   function exportData() {
     const data = { banks, cards };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1085,6 +1098,7 @@
       document.getElementById('tabList').classList.add('active');
       document.getElementById('tabCalendar').classList.remove('active');
       document.getElementById('filterBar').classList.remove('hide');
+      
       // 显示添加卡片按钮（列表视图可见）
       document.getElementById('addCardBtn').style.display = 'inline-block';
       document.getElementById('addCardBtn').classList.add('active'); 
@@ -1340,15 +1354,18 @@
     };
 
     document.getElementById('filterBank').onchange = refreshViews;
+    document.getElementById('filterLevel').onchange = refreshViews;
     document.getElementById('billDayFrom').oninput = refreshViews;
     document.getElementById('billDayTo').oninput = refreshViews;
     document.getElementById('orgFilters').addEventListener('change', refreshViews);
+ 
     document.getElementById('clearFilters').onclick = () => {
-        document.getElementById('filterBank').selectedIndex = -1;
-        document.querySelectorAll('.orgFilterCheck').forEach(cb => cb.checked = false);
-        document.getElementById('billDayFrom').value = '';
-        document.getElementById('billDayTo').value = '';
-        refreshViews();
+      document.getElementById('filterBank').value = '';      // 重置为“选择银行”
+      document.getElementById('filterLevel').value = '';     // 重置为“选择等级”
+      document.querySelectorAll('.orgFilterCheck').forEach(cb => cb.checked = false);
+      document.getElementById('billDayFrom').value = '';
+      document.getElementById('billDayTo').value = '';
+      refreshViews();
     };
 
       // 使用事件委托，绑定到父容器（可以是 document 或 .toolbar）
