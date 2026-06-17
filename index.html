@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>银行卡管理 v20260617.1720</title>
+<title>银行卡管理 v20260617.2300</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -780,6 +780,10 @@ function renderCreditCards() {
     const urgencyClass = getUrgencyClass(nextDue);
     const row = document.createElement('tr');
     row.className = urgencyClass;
+    // ✅ 加这一行：银行颜色 10% 透明度背景
+    if (bank?.color) {
+      row.style.backgroundColor = bank.color + '1A';  // #xxxxxx1A = 10% 透明度
+    }
     let dueColorStyle = '';
     if (urgencyClass === 'urgent-red') dueColorStyle = 'style="color:#c0392b;font-weight:500;"';
     else if (urgencyClass === 'urgent-orange') dueColorStyle = 'style="color:#e67e22;font-weight:500;"';
@@ -843,6 +847,10 @@ function renderDebitCards() {
   filtered.forEach(card => {
     const bank = banks.find(b => b.id === card.bankId);
     const row = document.createElement('tr');
+    // ✅ 加这一行：银行颜色 10% 透明度背景
+    if (bank?.color) {
+      row.style.backgroundColor = bank.color + '1A';  // #xxxxxx1A = 10% 透明度
+    }
     row.innerHTML = `
       <td><span style="color:${bank?.color || '#000'};font-weight:500;">${bank?.name || '未知'}</span></td>
       <td>${card.organizations.map(o => `<span class="badge">${o}</span>`).join('')}</td>
