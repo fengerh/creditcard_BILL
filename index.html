@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>银行卡管理 v20260617.2300</title>
+<title>银行卡管理 v20260617.2330</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -77,26 +77,31 @@
   .action-link { color: var(--primary); text-decoration: none; cursor: pointer; font-size:0.85rem; }
   .action-link:hover { text-decoration: underline; }
   .action-link.danger { color: var(--danger); }
+  
   .date-picker-group {
       display: inline-flex; align-items: center; background: white;
       border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+      height: 38px;        /* ✅ 所有按钮统一 38px 高 */
+      line-height: 1;
   }
   .date-picker-group .date-label {
-      padding: 6px 10px; background: #f8fafd; border-right: 1px solid var(--border);
+      padding: 10px 10px;  border-right: 1px solid var(--border);margin-left: 2px;
       font-size: 0.9rem;
   }
   .date-picker-group .date-input { border: none; padding: 6px 8px; font-size: 0.9rem; outline: none; }
   .billday-group {
       display: inline-flex; align-items: center; background: white;
       border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+      height: 38px;        /* ✅ 所有按钮统一 38px 高 */
+      line-height: 1;
   }
   .billday-group .billday-label {
-      padding: 6px 10px; background: #f8fafd; border-right: 1px solid var(--border);
+      padding: 10px 10px; border-right: 1px solid var(--border);margin-left: 2px;
       font-size: 0.9rem;
   }
   .billday-group .billday-input {
       border: none; padding: 6px 8px; font-size: 0.9rem; outline: none;
-      width: 52px; text-align: center;
+      width: 50px; text-align: center;
   }
   .billday-group .billday-sep { padding: 0 4px; color: #aaa; font-weight: 500; }
   .form-group-bank { display: flex; flex-direction: column; gap: 0px; }
@@ -208,6 +213,9 @@
     display: none !important;
   }
 
+  
+
+
 </style>
 </head>
 <body>
@@ -279,7 +287,7 @@
   </div>
   
   <div class="toolbar" id="filterBar">
-    <div class="filters" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+    <div class="filters" style="display:flex; justify-content:space-between; align-items:center; width:100%;margin-left:2px;">
       <select id="filterBank" multiple size="1" style="width:160px;" title="银行（可多选）">
         <option value="">选择银行</option>
       </select>
@@ -780,10 +788,12 @@ function renderCreditCards() {
     const urgencyClass = getUrgencyClass(nextDue);
     const row = document.createElement('tr');
     row.className = urgencyClass;
+
     // ✅ 加这一行：银行颜色 10% 透明度背景
     if (bank?.color) {
       row.style.backgroundColor = bank.color + '1A';  // #xxxxxx1A = 10% 透明度
     }
+
     let dueColorStyle = '';
     if (urgencyClass === 'urgent-red') dueColorStyle = 'style="color:#c0392b;font-weight:500;"';
     else if (urgencyClass === 'urgent-orange') dueColorStyle = 'style="color:#e67e22;font-weight:500;"';
@@ -847,10 +857,12 @@ function renderDebitCards() {
   filtered.forEach(card => {
     const bank = banks.find(b => b.id === card.bankId);
     const row = document.createElement('tr');
+
     // ✅ 加这一行：银行颜色 10% 透明度背景
     if (bank?.color) {
       row.style.backgroundColor = bank.color + '1A';  // #xxxxxx1A = 10% 透明度
     }
+
     row.innerHTML = `
       <td><span style="color:${bank?.color || '#000'};font-weight:500;">${bank?.name || '未知'}</span></td>
       <td>${card.organizations.map(o => `<span class="badge">${o}</span>`).join('')}</td>
