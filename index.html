@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>银行卡管理 v20260617.2340</title>
+<title>银行卡管理 v20260618.1000</title>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -211,6 +211,18 @@
   #credit_newBankInCard,
   #debit_newBankInCard {
     display: none !important;
+  }
+
+  /* 表格行 hover - 用阴影模拟加粗，文字宽度不变 ✅ */
+  #cardTable tbody tr:hover td {
+    text-shadow: 1.0px 0 0 currentColor;  /* 模拟加粗，不占宽度 */
+  }
+
+  /* 2. 日历格子 hover 时加粗高亮 */
+  .cal-day:hover {
+    
+    background-color: rgba(241, 150, 3, 0.1) !important;  /* 淡橙色背景 */
+    border: 1px solid var(--primary) !important;
   }
 
   
